@@ -593,13 +593,14 @@ async fn test_search_invalid_op_for_field() {
 async fn test_search_exact_on_tags() {
     let base = spawn_app().await;
     let client = Client::new();
+    // exact on tags is now supported — should return 200 (even with unknown UUIDs, just 0 results)
     let resp = client
         .post(&format!("{base}/images/search"))
         .json(&json!({"filters": [{"field": "tags", "op": "exact", "value": ["x"]}]}))
         .send()
         .await
         .unwrap();
-    assert_eq!(resp.status(), 400);
+    assert_eq!(resp.status(), 200);
 }
 
 #[tokio::test]
@@ -738,4 +739,106 @@ async fn test_get_image_file_content_is_jpeg() {
     assert_eq!(body[0], 0xFF);
     assert_eq!(body[1], 0xD8);
     assert_eq!(body[2], 0xFF);
+}
+
+// ─── PUT /images/{uuid}/tags ───
+
+#[tokio::test]
+async fn test_update_tags_set_and_verify() {
+    let base = spawn_app().await;
+    let client = Client::new();
+
+    // Get an image UUID and some tag UUIDs
+    let results = search(&client, &base, json!([])).await;
+    let image_uuid = results.as_array().unwrap()[0]["uuid"].as_str().unwrap();
+    let outdoor = get_tag_uuid(&client, &base, "outdoor").await;
+    let moody = get_tag_uuid(&client, &base, "moody").await;
+
+    // Set tags to exactly [outdoor, moody]
+    let resp = client
+        .put(&format!("{base}/images/{image_uuid}/tags"))
+        .json(&json!({ "tag_uuids": [outdoor, moody] }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 204);
+
+    // Verify via search that the image now has exactly these tags
+    let results = search(&client, &base, json!([])).await;
+    let img = results
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["uuid"].as_str().unwrap() == image_uuid)
+        .unwrap();
+    let tag_names: Vec<&str> = img["tags"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["name"].as_str().unwrap())
+        .collect();
+    assert_eq!(tag_names.len(), 2);
+    assert!(tag_names.contains(&"outdoor"));
+    assert!(tag_names.contains(&"moody"));
+}
+
+#[tokio::test]
+async fn test_update_tags_clear_all() {
+    let base = spawn_app().await;
+    let client = Client::new();
+
+    let results = search(&client, &base, json!([])).await;
+    let image_uuid = results.as_array().unwrap()[0]["uuid"].as_str().unwrap();
+
+    // Clear all tags
+    let resp = client
+        .put(&format!("{base}/images/{image_uuid}/tags"))
+        .json(&json!({ "tag_uuids": [] }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 204);
+
+    // Verify empty
+    let results = search(&client, &base, json!([])).await;
+    let img = results
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["uuid"].as_str().unwrap() == image_uuid)
+        .unwrap();
+    assert_eq!(img["tags"].as_array().unwrap().len(), 0);
+}
+
+#[tokio::test]
+async fn test_update_tags_invalid_image_uuid() {
+    let base = spawn_app().await;
+    let client = Client::new();
+
+    let resp = client
+        .put(&format!(
+            "{base}/images/00000000-0000-0000-0000-000000000000/tags"
+        ))
+        .json(&json!({ "tag_uuids": [] }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 404);
+}
+
+#[tokio::test]
+async fn test_update_tags_invalid_tag_uuid() {
+    let base = spawn_app().await;
+    let client = Client::new();
+
+    let results = search(&client, &base, json!([])).await;
+    let image_uuid = results.as_array().unwrap()[0]["uuid"].as_str().unwrap();
+
+    let resp = client
+        .put(&format!("{base}/images/{image_uuid}/tags"))
+        .json(&json!({ "tag_uuids": ["nonexistent-tag-uuid"] }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 400);
 }

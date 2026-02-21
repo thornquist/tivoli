@@ -241,7 +241,9 @@ def create_database(db_path, image_records, image_model_links, image_tag_links):
             uuid TEXT PRIMARY KEY,
             path TEXT NOT NULL,
             collection TEXT NOT NULL,
-            gallery TEXT NOT NULL
+            gallery TEXT NOT NULL,
+            width INTEGER NOT NULL,
+            height INTEGER NOT NULL
         )
     """)
     cur.execute("CREATE INDEX idx_images_collection ON images(collection)")
@@ -265,6 +267,7 @@ def create_database(db_path, image_records, image_model_links, image_tag_links):
             PRIMARY KEY (image_uuid, model_uuid)
         )
     """)
+    cur.execute("CREATE INDEX idx_image_models_model ON image_models(model_uuid)")
 
     # -- tag groups & tags
     cur.execute("""
@@ -290,10 +293,11 @@ def create_database(db_path, image_records, image_model_links, image_tag_links):
             PRIMARY KEY (image_uuid, tag_uuid)
         )
     """)
+    cur.execute("CREATE INDEX idx_image_tags_tag ON image_tags(tag_uuid)")
 
     # -- insert images
     cur.executemany(
-        "INSERT INTO images (uuid, path, collection, gallery) VALUES (?, ?, ?, ?)",
+        "INSERT INTO images (uuid, path, collection, gallery, width, height) VALUES (?, ?, ?, ?, ?, ?)",
         image_records,
     )
 
@@ -384,7 +388,7 @@ def main():
                 )
 
                 image_uuid = str(uuid.uuid4())
-                image_records.append((image_uuid, rel_path, collection_name, gallery_name))
+                image_records.append((image_uuid, rel_path, collection_name, gallery_name, width, height))
                 image_model_links.append((image_uuid, model_names, collection_name))
                 image_tag_links.append((image_uuid, tag_names))
                 image_count += 1

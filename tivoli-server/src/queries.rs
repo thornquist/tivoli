@@ -80,6 +80,21 @@ pub fn build_image_query(filters: &[FilterClause]) -> Result<(String, Vec<String
                             vals.len()
                         ));
                     }
+                    FilterOp::Exact => {
+                        // Must have all selected tags
+                        conditions.push(format!(
+                            "i.uuid IN (SELECT image_uuid FROM image_tags WHERE tag_uuid IN ({placeholders}) GROUP BY image_uuid HAVING COUNT(DISTINCT tag_uuid) = {})",
+                            vals.len()
+                        ));
+                        params.extend(vals.iter().map(|v| v.to_string()));
+                        // Must not have other tags from the same group(s)
+                        let placeholders2 = make_placeholders(vals.len());
+                        conditions.push(format!(
+                            "i.uuid NOT IN (SELECT it2.image_uuid FROM image_tags it2 JOIN tags t2 ON it2.tag_uuid = t2.uuid WHERE t2.tag_group_uuid IN (SELECT tag_group_uuid FROM tags WHERE uuid IN ({placeholders2})) AND it2.tag_uuid NOT IN ({placeholders2}))"
+                        ));
+                        params.extend(vals.iter().map(|v| v.to_string()));
+                        params.extend(vals.iter().map(|v| v.to_string()));
+                    }
                     FilterOp::NoneOf => {
                         conditions.push(format!(
                             "i.uuid NOT IN (SELECT image_uuid FROM image_tags WHERE tag_uuid IN ({placeholders}))"
@@ -87,12 +102,17 @@ pub fn build_image_query(filters: &[FilterClause]) -> Result<(String, Vec<String
                     }
                     _ => unreachable!(),
                 }
-                params.extend(vals.iter().map(|v| v.to_string()));
+                // For exact, params are already added inline above
+                if clause.op == FilterOp::Exact {
+                    // already handled
+                } else {
+                    params.extend(vals.iter().map(|v| v.to_string()));
+                }
             }
         }
     }
 
-    let mut sql = "SELECT i.uuid, i.path, i.collection, i.gallery FROM images i".to_string();
+    let mut sql = "SELECT i.uuid, i.path, i.collection, i.gallery, i.width, i.height FROM images i".to_string();
     if !conditions.is_empty() {
         sql.push_str(" WHERE ");
         sql.push_str(&conditions.join(" AND "));
@@ -110,9 +130,7 @@ fn validate_clause(clause: &FilterClause) -> Result<(), AppError> {
                 if clause.field == FilterField::Collection { "collection" } else { "gallery" }
             )))
         }
-        (FilterField::Tags, FilterOp::Exact) => {
-            Err(AppError::BadRequest("tags does not support the 'exact' operator".into()))
-        }
+        (FilterField::Tags, FilterOp::Exact) => Ok(()),
         (FilterField::Tags | FilterField::Models, FilterOp::Eq) => {
             Err(AppError::BadRequest(format!(
                 "{} does not support the 'eq' operator",
@@ -144,6 +162,8 @@ pub fn query_images(
             path: row.get(1)?,
             collection: row.get(2)?,
             gallery: row.get(3)?,
+            width: row.get(4)?,
+            height: row.get(5)?,
         })
     })?;
     rows.collect()
@@ -210,6 +230,48 @@ pub fn tags_for_images(
         map.entry(image_uuid).or_default().push(tag_ref);
     }
     Ok(map)
+}
+
+pub fn replace_image_tags(
+    conn: &rusqlite::Connection,
+    image_uuid: &str,
+    tag_uuids: &[String],
+) -> Result<(), AppError> {
+    // Verify image exists
+    let exists: bool = conn
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM images WHERE uuid = ?)",
+            [image_uuid],
+            |row| row.get(0),
+        )
+        .map_err(|e| AppError::DbError(e.to_string()))?;
+    if !exists {
+        return Err(AppError::NotFound("Image not found".into()));
+    }
+
+    // Verify all tag UUIDs exist
+    for tag_uuid in tag_uuids {
+        let tag_exists: bool = conn
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM tags WHERE uuid = ?)",
+                [tag_uuid],
+                |row| row.get(0),
+            )
+            .map_err(|e| AppError::DbError(e.to_string()))?;
+        if !tag_exists {
+            return Err(AppError::BadRequest(format!(
+                "Tag not found: {tag_uuid}"
+            )));
+        }
+    }
+
+    conn.execute("DELETE FROM image_tags WHERE image_uuid = ?", [image_uuid])?;
+    let mut stmt =
+        conn.prepare("INSERT INTO image_tags (image_uuid, tag_uuid) VALUES (?, ?)")?;
+    for tag_uuid in tag_uuids {
+        stmt.execute(rusqlite::params![image_uuid, tag_uuid])?;
+    }
+    Ok(())
 }
 
 pub fn query_collections(

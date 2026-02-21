@@ -35,6 +35,8 @@ pub async fn search_images(
                 path: img.path,
                 collection: img.collection,
                 gallery: img.gallery,
+                width: img.width,
+                height: img.height,
                 models,
                 tags,
             }
@@ -77,6 +79,16 @@ pub async fn get_image_file(
         [(axum::http::header::CONTENT_TYPE, "image/jpeg")],
         body,
     ))
+}
+
+pub async fn update_image_tags(
+    State(state): State<Arc<AppState>>,
+    Path(uuid): Path<String>,
+    Json(request): Json<UpdateTagsRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let conn = state.pool.get()?;
+    queries::replace_image_tags(&conn, &uuid, &request.tag_uuids)?;
+    Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
 pub async fn list_collections(

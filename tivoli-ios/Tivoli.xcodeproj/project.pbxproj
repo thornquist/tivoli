@@ -1,0 +1,402 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		053B96C65216B41BE30226F9 /* SearchFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B6E15FBA5BEFB8088F731E /* SearchFilter.swift */; };
+		0B9B38804B5318F298815DC0 /* ServerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46A580549248E9F10F111DF3 /* ServerStore.swift */; };
+		18CE5EC35C510E516AD7FAFF /* WaterfallGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8CA1C47C63716F9092C84F8 /* WaterfallGrid.swift */; };
+		2877D815A34C2BE33DF4F752 /* TagRef.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1EB66E01D284BE5080B593 /* TagRef.swift */; };
+		2DB286A7E328D32A7B507EE0 /* CachedAsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E49F08DCF562A0172A1B05 /* CachedAsyncImage.swift */; };
+		2E128D49C2197F301160BAAF /* Gallery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660C7878B2450E66393F5627 /* Gallery.swift */; };
+		2E2106A1717423C93823A9BF /* TagGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3FB45237059E7DEBA1F32A9 /* TagGroup.swift */; };
+		3F19A1594358CC130EDCD9E8 /* Collection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8222BBF2D2DDB8440A6F5287 /* Collection.swift */; };
+		4061FFBD9E002F1097915D5B /* TivoliApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9EE9C1BAB064646480AECE9 /* TivoliApp.swift */; };
+		66147AEBAF4F727DA1AB2B98 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3239EDFE88BA0F8310BBA52 /* APIClient.swift */; };
+		6FFC275C2941DD6C03003DF7 /* ConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FEECDAE077C96FD120AECCA /* ConnectView.swift */; };
+		707FE2667B747E8A250E4734 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B0D0140D6B774A9E9356D74 /* ImageCache.swift */; };
+		819FF3AAC6BBDC6CF6A7FEC4 /* TagChipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2827A99C4E50AE73FC2C9C55 /* TagChipView.swift */; };
+		89BF5E02F8E6F8BA12D3E837 /* ServerConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4366F252F52E6748E36E3D86 /* ServerConnection.swift */; };
+		A535E7EC353084EA9858D837 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F108C1EFFE3BE0EFF842FDC5 /* MainView.swift */; };
+		ADB94FB9BE2ED0F4BE8D715E /* ModelEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F27508CEFBFC934A9B3E316 /* ModelEntity.swift */; };
+		B5F8FD0B757E31A16060E4F6 /* ModelRef.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91F2351FB435304CA4E8117F /* ModelRef.swift */; };
+		C160CBFE946E342A2BAA0FA5 /* FilterChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32E70B2D4C21BDD5EEEA0543 /* FilterChip.swift */; };
+		D99766BE8C885ABD50651392 /* TagEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69BC469EA76ACFD3DBA0B7D0 /* TagEditorView.swift */; };
+		E8EF853BDC2E523D6BF22460 /* ImagePagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 225781A41B218AE76CFB3E41 /* ImagePagerView.swift */; };
+		FDA30F63E071469A8B89CE23 /* ImageSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2AB2760CA29F4EE9DA3870 /* ImageSummary.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		225781A41B218AE76CFB3E41 /* ImagePagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePagerView.swift; sourceTree = "<group>"; };
+		2827A99C4E50AE73FC2C9C55 /* TagChipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagChipView.swift; sourceTree = "<group>"; };
+		32E70B2D4C21BDD5EEEA0543 /* FilterChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterChip.swift; sourceTree = "<group>"; };
+		3F27508CEFBFC934A9B3E316 /* ModelEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelEntity.swift; sourceTree = "<group>"; };
+		4366F252F52E6748E36E3D86 /* ServerConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConnection.swift; sourceTree = "<group>"; };
+		46A580549248E9F10F111DF3 /* ServerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerStore.swift; sourceTree = "<group>"; };
+		660C7878B2450E66393F5627 /* Gallery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gallery.swift; sourceTree = "<group>"; };
+		69BC469EA76ACFD3DBA0B7D0 /* TagEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagEditorView.swift; sourceTree = "<group>"; };
+		7B0D0140D6B774A9E9356D74 /* ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
+		8222BBF2D2DDB8440A6F5287 /* Collection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Collection.swift; sourceTree = "<group>"; };
+		8FEECDAE077C96FD120AECCA /* ConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectView.swift; sourceTree = "<group>"; };
+		91F2351FB435304CA4E8117F /* ModelRef.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelRef.swift; sourceTree = "<group>"; };
+		9C6ED5FFF821A934E94F1CB9 /* Tivoli.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Tivoli.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9F2AB2760CA29F4EE9DA3870 /* ImageSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageSummary.swift; sourceTree = "<group>"; };
+		A8CA1C47C63716F9092C84F8 /* WaterfallGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaterfallGrid.swift; sourceTree = "<group>"; };
+		A9EE9C1BAB064646480AECE9 /* TivoliApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TivoliApp.swift; sourceTree = "<group>"; };
+		C3239EDFE88BA0F8310BBA52 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		C3FB45237059E7DEBA1F32A9 /* TagGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagGroup.swift; sourceTree = "<group>"; };
+		C5B6E15FBA5BEFB8088F731E /* SearchFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchFilter.swift; sourceTree = "<group>"; };
+		CC1EB66E01D284BE5080B593 /* TagRef.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagRef.swift; sourceTree = "<group>"; };
+		F108C1EFFE3BE0EFF842FDC5 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
+		F2E49F08DCF562A0172A1B05 /* CachedAsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAsyncImage.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		4917BE5B2BEED0EB1D26B04C /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				F2E49F08DCF562A0172A1B05 /* CachedAsyncImage.swift */,
+				32E70B2D4C21BDD5EEEA0543 /* FilterChip.swift */,
+				2827A99C4E50AE73FC2C9C55 /* TagChipView.swift */,
+				A8CA1C47C63716F9092C84F8 /* WaterfallGrid.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		5B6F6891504EC96F16A7EDE7 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				C3239EDFE88BA0F8310BBA52 /* APIClient.swift */,
+				7B0D0140D6B774A9E9356D74 /* ImageCache.swift */,
+				46A580549248E9F10F111DF3 /* ServerStore.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		6CA8037A489A207514686831 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A9EE9C1BAB064646480AECE9 /* TivoliApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		7E41F7FD75BD070E667BB784 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				8FEECDAE077C96FD120AECCA /* ConnectView.swift */,
+				225781A41B218AE76CFB3E41 /* ImagePagerView.swift */,
+				F108C1EFFE3BE0EFF842FDC5 /* MainView.swift */,
+				69BC469EA76ACFD3DBA0B7D0 /* TagEditorView.swift */,
+				4917BE5B2BEED0EB1D26B04C /* Components */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		96CC9CD8BC9FC77E215C8F6D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9C6ED5FFF821A934E94F1CB9 /* Tivoli.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D5193DF7D0BE631A6F0019C3 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				6CA8037A489A207514686831 /* App */,
+				FC298C3639744C48B20661A2 /* Models */,
+				5B6F6891504EC96F16A7EDE7 /* Services */,
+				7E41F7FD75BD070E667BB784 /* Views */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		EB9158CCD83656C74083E0F7 = {
+			isa = PBXGroup;
+			children = (
+				D5193DF7D0BE631A6F0019C3 /* Sources */,
+				96CC9CD8BC9FC77E215C8F6D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		FC298C3639744C48B20661A2 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				8222BBF2D2DDB8440A6F5287 /* Collection.swift */,
+				660C7878B2450E66393F5627 /* Gallery.swift */,
+				9F2AB2760CA29F4EE9DA3870 /* ImageSummary.swift */,
+				3F27508CEFBFC934A9B3E316 /* ModelEntity.swift */,
+				91F2351FB435304CA4E8117F /* ModelRef.swift */,
+				C5B6E15FBA5BEFB8088F731E /* SearchFilter.swift */,
+				4366F252F52E6748E36E3D86 /* ServerConnection.swift */,
+				C3FB45237059E7DEBA1F32A9 /* TagGroup.swift */,
+				CC1EB66E01D284BE5080B593 /* TagRef.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		EBF9B2BDACF7DFC20DC4C305 /* Tivoli */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 446B82D6B71F0D296E51708B /* Build configuration list for PBXNativeTarget "Tivoli" */;
+			buildPhases = (
+				65B6E08AA766C7B83F9C44F1 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Tivoli;
+			packageProductDependencies = (
+			);
+			productName = Tivoli;
+			productReference = 9C6ED5FFF821A934E94F1CB9 /* Tivoli.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		9EF1F9F24DC2C33B568F1A3A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+			};
+			buildConfigurationList = E9233608CC193BAC41E05C8C /* Build configuration list for PBXProject "Tivoli" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = EB9158CCD83656C74083E0F7;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				EBF9B2BDACF7DFC20DC4C305 /* Tivoli */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		65B6E08AA766C7B83F9C44F1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				66147AEBAF4F727DA1AB2B98 /* APIClient.swift in Sources */,
+				2DB286A7E328D32A7B507EE0 /* CachedAsyncImage.swift in Sources */,
+				3F19A1594358CC130EDCD9E8 /* Collection.swift in Sources */,
+				6FFC275C2941DD6C03003DF7 /* ConnectView.swift in Sources */,
+				C160CBFE946E342A2BAA0FA5 /* FilterChip.swift in Sources */,
+				2E128D49C2197F301160BAAF /* Gallery.swift in Sources */,
+				707FE2667B747E8A250E4734 /* ImageCache.swift in Sources */,
+				E8EF853BDC2E523D6BF22460 /* ImagePagerView.swift in Sources */,
+				FDA30F63E071469A8B89CE23 /* ImageSummary.swift in Sources */,
+				A535E7EC353084EA9858D837 /* MainView.swift in Sources */,
+				ADB94FB9BE2ED0F4BE8D715E /* ModelEntity.swift in Sources */,
+				B5F8FD0B757E31A16060E4F6 /* ModelRef.swift in Sources */,
+				053B96C65216B41BE30226F9 /* SearchFilter.swift in Sources */,
+				89BF5E02F8E6F8BA12D3E837 /* ServerConnection.swift in Sources */,
+				0B9B38804B5318F298815DC0 /* ServerStore.swift in Sources */,
+				819FF3AAC6BBDC6CF6A7FEC4 /* TagChipView.swift in Sources */,
+				D99766BE8C885ABD50651392 /* TagEditorView.swift in Sources */,
+				2E2106A1717423C93823A9BF /* TagGroup.swift in Sources */,
+				2877D815A34C2BE33DF4F752 /* TagRef.swift in Sources */,
+				4061FFBD9E002F1097915D5B /* TivoliApp.swift in Sources */,
+				18CE5EC35C510E516AD7FAFF /* WaterfallGrid.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0C77BCAFD779338858D19021 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.tivoli.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D55F5FAC9A3F8A87AF4650B7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.tivoli.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		DF49A181E14CEE9B7D968532 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E14879B780758317584C6BA7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		446B82D6B71F0D296E51708B /* Build configuration list for PBXNativeTarget "Tivoli" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C77BCAFD779338858D19021 /* Debug */,
+				D55F5FAC9A3F8A87AF4650B7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E9233608CC193BAC41E05C8C /* Build configuration list for PBXProject "Tivoli" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DF49A181E14CEE9B7D968532 /* Debug */,
+				E14879B780758317584C6BA7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 9EF1F9F24DC2C33B568F1A3A /* Project object */;
+}

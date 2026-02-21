@@ -6,7 +6,7 @@ mod queries;
 
 use std::sync::Arc;
 
-use axum::routing::{get, post};
+use axum::routing::{get, post, put};
 use axum::Router;
 use handlers::AppState;
 
@@ -28,6 +28,7 @@ pub fn build_app(db_path: &str, galleries_dir: &str) -> Router {
     Router::new()
         .route("/images/search", post(handlers::search_images))
         .route("/images/{uuid}/file", get(handlers::get_image_file))
+        .route("/images/{uuid}/tags", put(handlers::update_image_tags))
         .route("/collections", get(handlers::list_collections))
         .route("/galleries", get(handlers::list_galleries))
         .route("/models", get(handlers::list_models))

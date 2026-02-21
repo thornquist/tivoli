@@ -57,6 +57,13 @@ impl FilterValue {
     }
 }
 
+// --- Tag mutation ---
+
+#[derive(Deserialize)]
+pub struct UpdateTagsRequest {
+    pub tag_uuids: Vec<String>,
+}
+
 // --- Query parameter structs ---
 
 #[derive(Deserialize)]
@@ -72,6 +79,8 @@ pub struct ImageSummary {
     pub path: String,
     pub collection: String,
     pub gallery: String,
+    pub width: u32,
+    pub height: u32,
     pub models: Vec<ModelRef>,
     pub tags: Vec<TagRef>,
 }
@@ -130,4 +139,6 @@ pub struct ImageRow {
     pub path: String,
     pub collection: String,
     pub gallery: String,
+    pub width: u32,
+    pub height: u32,
 }
