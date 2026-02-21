@@ -67,19 +67,12 @@ pub struct CollectionFilter {
 // --- Response structs ---
 
 #[derive(Serialize)]
-pub struct ImageSummary {
-    pub uuid: String,
-    pub path: String,
-    pub collection: String,
-    pub gallery: String,
-    pub models: Vec<ModelRef>,
+pub struct FilterOptions {
+    pub image_count: u32,
+    pub collections: Vec<String>,
+    pub galleries: Vec<GallerySummary>,
+    pub models: Vec<Model>,
     pub tags: Vec<TagRef>,
-}
-
-#[derive(Serialize, Clone)]
-pub struct ModelRef {
-    pub uuid: String,
-    pub name: String,
 }
 
 #[derive(Serialize, Clone)]
@@ -125,6 +118,7 @@ pub struct Tag {
 
 // --- Internal types ---
 
+#[derive(Serialize)]
 pub struct ImageRow {
     pub uuid: String,
     pub path: String,

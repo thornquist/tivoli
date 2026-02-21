@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::errors::AppError;
 use crate::models::*;
 
@@ -149,67 +147,91 @@ pub fn query_images(
     rows.collect()
 }
 
-pub fn models_for_images(
+pub fn query_filter_options(
     conn: &rusqlite::Connection,
-    image_uuids: &[&str],
-) -> Result<HashMap<String, Vec<ModelRef>>, rusqlite::Error> {
-    if image_uuids.is_empty() {
-        return Ok(HashMap::new());
-    }
-    let placeholders = make_placeholders(image_uuids.len());
-    let sql = format!(
-        "SELECT im.image_uuid, m.uuid, m.name FROM image_models im JOIN models m ON im.model_uuid = m.uuid WHERE im.image_uuid IN ({placeholders})"
-    );
+    filters: &[FilterClause],
+) -> Result<FilterOptions, AppError> {
+    let (image_sql, params) = build_image_query(filters)?;
+    // Use the image query as a subquery (strip the ORDER BY for efficiency)
+    let subquery = image_sql.replace(" ORDER BY i.collection, i.gallery, i.path", "");
     let param_refs: Vec<&dyn rusqlite::types::ToSql> =
-        image_uuids.iter().map(|s| s as &dyn rusqlite::types::ToSql).collect();
-    let mut stmt = conn.prepare(&sql)?;
-    let mut map: HashMap<String, Vec<ModelRef>> = HashMap::new();
-    let rows = stmt.query_map(param_refs.as_slice(), |row| {
-        Ok((
-            row.get::<_, String>(0)?,
-            ModelRef {
-                uuid: row.get(1)?,
-                name: row.get(2)?,
-            },
-        ))
-    })?;
-    for row in rows {
-        let (image_uuid, model_ref) = row?;
-        map.entry(image_uuid).or_default().push(model_ref);
-    }
-    Ok(map)
-}
+        params.iter().map(|s| s as &dyn rusqlite::types::ToSql).collect();
 
-pub fn tags_for_images(
-    conn: &rusqlite::Connection,
-    image_uuids: &[&str],
-) -> Result<HashMap<String, Vec<TagRef>>, rusqlite::Error> {
-    if image_uuids.is_empty() {
-        return Ok(HashMap::new());
-    }
-    let placeholders = make_placeholders(image_uuids.len());
-    let sql = format!(
-        "SELECT it.image_uuid, t.uuid, t.name, tg.name FROM image_tags it JOIN tags t ON it.tag_uuid = t.uuid JOIN tag_groups tg ON t.tag_group_uuid = tg.uuid WHERE it.image_uuid IN ({placeholders})"
+    // Count
+    let count_sql = format!("SELECT COUNT(*) FROM ({subquery})");
+    let image_count: u32 = conn
+        .query_row(&count_sql, param_refs.as_slice(), |row| row.get(0))?;
+
+    // Distinct collections
+    let coll_sql = format!(
+        "SELECT DISTINCT collection FROM ({subquery}) ORDER BY collection",
     );
-    let param_refs: Vec<&dyn rusqlite::types::ToSql> =
-        image_uuids.iter().map(|s| s as &dyn rusqlite::types::ToSql).collect();
-    let mut stmt = conn.prepare(&sql)?;
-    let mut map: HashMap<String, Vec<TagRef>> = HashMap::new();
-    let rows = stmt.query_map(param_refs.as_slice(), |row| {
-        Ok((
-            row.get::<_, String>(0)?,
-            TagRef {
-                uuid: row.get(1)?,
-                name: row.get(2)?,
-                group: row.get(3)?,
-            },
-        ))
-    })?;
-    for row in rows {
-        let (image_uuid, tag_ref) = row?;
-        map.entry(image_uuid).or_default().push(tag_ref);
-    }
-    Ok(map)
+    let mut stmt = conn.prepare(&coll_sql)?;
+    let collections: Vec<String> = stmt
+        .query_map(param_refs.as_slice(), |row| row.get(0))?
+        .collect::<Result<_, _>>()?;
+
+    // Distinct galleries
+    let gal_sql = format!(
+        "SELECT DISTINCT collection, gallery FROM ({subquery}) ORDER BY collection, gallery",
+    );
+    let mut stmt = conn.prepare(&gal_sql)?;
+    let galleries: Vec<GallerySummary> = stmt
+        .query_map(param_refs.as_slice(), |row| {
+            Ok(GallerySummary {
+                collection: row.get(0)?,
+                name: row.get(1)?,
+                image_count: 0,
+            })
+        })?
+        .collect::<Result<_, _>>()?;
+
+    // Distinct models
+    let model_sql = format!(
+        "SELECT DISTINCT m.uuid, m.name, m.collection \
+         FROM image_models im \
+         JOIN models m ON im.model_uuid = m.uuid \
+         WHERE im.image_uuid IN (SELECT uuid FROM ({subquery})) \
+         ORDER BY m.collection, m.name",
+    );
+    let mut stmt = conn.prepare(&model_sql)?;
+    let models: Vec<Model> = stmt
+        .query_map(param_refs.as_slice(), |row| {
+            Ok(Model {
+                uuid: row.get(0)?,
+                name: row.get(1)?,
+                collection: row.get(2)?,
+            })
+        })?
+        .collect::<Result<_, _>>()?;
+
+    // Distinct tags
+    let tag_sql = format!(
+        "SELECT DISTINCT t.uuid, t.name, tg.name \
+         FROM image_tags it \
+         JOIN tags t ON it.tag_uuid = t.uuid \
+         JOIN tag_groups tg ON t.tag_group_uuid = tg.uuid \
+         WHERE it.image_uuid IN (SELECT uuid FROM ({subquery})) \
+         ORDER BY tg.name, t.name",
+    );
+    let mut stmt = conn.prepare(&tag_sql)?;
+    let tags: Vec<TagRef> = stmt
+        .query_map(param_refs.as_slice(), |row| {
+            Ok(TagRef {
+                uuid: row.get(0)?,
+                name: row.get(1)?,
+                group: row.get(2)?,
+            })
+        })?
+        .collect::<Result<_, _>>()?;
+
+    Ok(FilterOptions {
+        image_count,
+        collections,
+        galleries,
+        models,
+        tags,
+    })
 }
 
 pub fn query_collections(

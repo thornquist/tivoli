@@ -27,6 +27,7 @@ pub fn build_app(db_path: &str, galleries_dir: &str) -> Router {
 
     Router::new()
         .route("/images/search", post(handlers::search_images))
+        .route("/images/search/options", post(handlers::search_filter_options))
         .route("/images/{uuid}/file", get(handlers::get_image_file))
         .route("/collections", get(handlers::list_collections))
         .route("/galleries", get(handlers::list_galleries))

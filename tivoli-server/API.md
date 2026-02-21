@@ -196,7 +196,7 @@ curl http://localhost:3000/tags
 
 ### POST /images/search
 
-Search for images using the filter DSL. Returns enriched image objects with associated models and tags.
+Search for images using the filter DSL. Returns bare image rows for the grid view (use with lazy loading).
 
 **Request Body:**
 
@@ -217,18 +217,9 @@ An empty `filters` array returns all images.
 ```typescript
 Array<{
   uuid: string;
-  path: string;         // Relative to galleries/, e.g. "lumiere-studio/summer-editorial/emma-white-dress.jpg"
+  path: string;
   collection: string;
   gallery: string;
-  models: Array<{
-    uuid: string;
-    name: string;
-  }>;
-  tags: Array<{
-    uuid: string;
-    name: string;
-    group: string;       // Tag group name, e.g. "lighting"
-  }>;
 }>
 ```
 
@@ -251,22 +242,64 @@ curl -X POST http://localhost:3000/images/search \
     "uuid": "afe2f112-...",
     "path": "lumiere-studio/summer-editorial/emma-garden-bench.jpg",
     "collection": "lumiere-studio",
-    "gallery": "summer-editorial",
-    "models": [
-      { "uuid": "6156a42b-...", "name": "emma" }
-    ],
-    "tags": [
-      { "uuid": "7b9441ae-...", "name": "natural-light", "group": "lighting" },
-      { "uuid": "ca5de307-...", "name": "outdoor", "group": "setting" },
-      { "uuid": "a00f6dac-...", "name": "serene", "group": "mood" },
-      { "uuid": "6d0009ed-...", "name": "environmental", "group": "framing" },
-      { "uuid": "ceaa952c-...", "name": "casual", "group": "wardrobe" }
-    ]
+    "gallery": "summer-editorial"
   }
 ]
 ```
 
 See the [Filter DSL Reference](#filter-dsl-reference) below for full details.
+
+---
+
+### POST /images/search/options
+
+Get available filter options for the current filter state. Used by the filter view to show which values are available and how many images match.
+
+**Request Body:** Same as `/images/search`.
+
+**Response:**
+
+```typescript
+{
+  image_count: number;
+  collections: string[];
+  galleries: Array<{ name: string; collection: string; image_count: number }>;
+  models: Array<{ uuid: string; name: string; collection: string }>;
+  tags: Array<{ uuid: string; name: string; group: string }>;
+}
+```
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:3000/images/search/options \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "filters": [
+      { "field": "collection", "op": "eq", "value": "lumiere-studio" }
+    ]
+  }'
+```
+
+```json
+{
+  "image_count": 14,
+  "collections": ["lumiere-studio"],
+  "galleries": [
+    { "name": "bridal-collection", "collection": "lumiere-studio", "image_count": 0 },
+    { "name": "corporate-headshots", "collection": "lumiere-studio", "image_count": 0 },
+    { "name": "summer-editorial", "collection": "lumiere-studio", "image_count": 0 }
+  ],
+  "models": [
+    { "uuid": "6156a42b-...", "name": "anna", "collection": "lumiere-studio" },
+    { "uuid": "a1b2c3d4-...", "name": "clara", "collection": "lumiere-studio" }
+  ],
+  "tags": [
+    { "uuid": "7b9441ae-...", "name": "natural-light", "group": "lighting" },
+    { "uuid": "ca5de307-...", "name": "outdoor", "group": "setting" }
+  ]
+}
+```
 
 ---
 

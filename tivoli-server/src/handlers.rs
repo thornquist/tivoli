@@ -16,32 +16,20 @@ pub struct AppState {
 pub async fn search_images(
     State(state): State<Arc<AppState>>,
     Json(request): Json<SearchRequest>,
-) -> Result<Json<Vec<ImageSummary>>, AppError> {
+) -> Result<Json<Vec<ImageRow>>, AppError> {
     let (sql, params) = queries::build_image_query(&request.filters)?;
     let conn = state.pool.get()?;
-
     let images = queries::query_images(&conn, &sql, &params)?;
-    let uuids: Vec<&str> = images.iter().map(|i| i.uuid.as_str()).collect();
-    let models_map = queries::models_for_images(&conn, &uuids)?;
-    let tags_map = queries::tags_for_images(&conn, &uuids)?;
+    Ok(Json(images))
+}
 
-    let result: Vec<ImageSummary> = images
-        .into_iter()
-        .map(|img| {
-            let models = models_map.get(&img.uuid).cloned().unwrap_or_default();
-            let tags = tags_map.get(&img.uuid).cloned().unwrap_or_default();
-            ImageSummary {
-                uuid: img.uuid,
-                path: img.path,
-                collection: img.collection,
-                gallery: img.gallery,
-                models,
-                tags,
-            }
-        })
-        .collect();
-
-    Ok(Json(result))
+pub async fn search_filter_options(
+    State(state): State<Arc<AppState>>,
+    Json(request): Json<SearchRequest>,
+) -> Result<Json<FilterOptions>, AppError> {
+    let conn = state.pool.get()?;
+    let options = queries::query_filter_options(&conn, &request.filters)?;
+    Ok(Json(options))
 }
 
 pub async fn get_image_file(
