@@ -100,6 +100,7 @@ struct TagEditorView: View {
                 uuid: detail.uuid, path: detail.path,
                 collection: detail.collection, gallery: detail.gallery,
                 width: detail.width, height: detail.height,
+                fileSize: detail.fileSize,
                 models: detail.models, tags: tags
             )
         } else {
@@ -109,6 +110,7 @@ struct TagEditorView: View {
                 uuid: detail.uuid, path: detail.path,
                 collection: detail.collection, gallery: detail.gallery,
                 width: detail.width, height: detail.height,
+                fileSize: detail.fileSize,
                 models: detail.models, tags: tags
             )
         }

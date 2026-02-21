@@ -6,64 +6,64 @@ struct WaterfallGrid<Content: View>: View {
     let spacing: CGFloat
     @ViewBuilder let content: (Int, ImageSummary) -> Content
 
-    @State private var viewWidth: CGFloat = 0
+    @State private var containerWidth: CGFloat = 0
 
     var body: some View {
-        GeometryReader { geo in
-            let columnWidth = (geo.size.width - spacing * CGFloat(columnCount - 1)) / CGFloat(columnCount)
-            let layout = computeLayout(columnWidth: columnWidth)
+        let columnWidth = containerWidth > 0
+            ? (containerWidth - spacing * CGFloat(columnCount - 1)) / CGFloat(columnCount)
+            : 0
+        let columns = assignColumns(columnWidth: columnWidth)
 
-            ZStack(alignment: .topLeading) {
-                ForEach(layout.items) { item in
-                    content(item.index, images[item.index])
-                        .frame(width: columnWidth, height: item.height)
-                        .clipped()
-                        .offset(x: item.x, y: item.y)
+        HStack(alignment: .top, spacing: spacing) {
+            ForEach(0..<columnCount, id: \.self) { col in
+                LazyVStack(spacing: spacing) {
+                    ForEach(columns[col]) { item in
+                        content(item.globalIndex, images[item.globalIndex])
+                            .frame(width: columnWidth, height: item.height)
+                            .clipped()
+                    }
                 }
             }
-            .frame(width: geo.size.width, height: layout.totalHeight, alignment: .topLeading)
-            .onAppear { viewWidth = geo.size.width }
-            .onChange(of: geo.size.width) { _, w in viewWidth = w }
         }
-        .frame(height: estimateTotalHeight())
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(key: ContainerWidthKey.self, value: geo.size.width)
+            }
+        )
+        .onPreferenceChange(ContainerWidthKey.self) { containerWidth = $0 }
     }
 
-    private func computeLayout(columnWidth: CGFloat) -> LayoutResult {
+    private func assignColumns(columnWidth: CGFloat) -> [[ColumnItem]] {
+        guard columnWidth > 0 else {
+            return Array(repeating: [], count: columnCount)
+        }
+        var columns: [[ColumnItem]] = Array(repeating: [], count: columnCount)
         var columnHeights = Array(repeating: CGFloat.zero, count: columnCount)
-        var items: [LayoutItem] = []
 
         for (index, image) in images.enumerated() {
-            let shortestColumn = columnHeights.enumerated().min(by: { $0.element < $1.element })!.offset
+            let shortestColumn = columnHeights.enumerated()
+                .min(by: { $0.element < $1.element })!.offset
             let itemHeight = columnWidth / image.aspectRatio
-            let x = CGFloat(shortestColumn) * (columnWidth + spacing)
-            let y = columnHeights[shortestColumn]
 
-            items.append(LayoutItem(index: index, x: x, y: y, height: itemHeight))
+            columns[shortestColumn].append(
+                ColumnItem(globalIndex: index, height: itemHeight)
+            )
             columnHeights[shortestColumn] += itemHeight + spacing
         }
 
-        let totalHeight = columnHeights.max() ?? 0
-        return LayoutResult(items: items, totalHeight: totalHeight)
-    }
-
-    private func estimateTotalHeight() -> CGFloat {
-        guard !images.isEmpty, viewWidth > 0 else { return 0 }
-        let avgAspect = images.reduce(0.0) { $0 + $1.aspectRatio } / CGFloat(images.count)
-        let estimatedRowHeight = viewWidth / CGFloat(columnCount) / avgAspect
-        let rows = ceil(CGFloat(images.count) / CGFloat(columnCount))
-        return rows * (estimatedRowHeight + spacing)
+        return columns
     }
 }
 
-private struct LayoutItem: Identifiable {
-    let index: Int
-    let x: CGFloat
-    let y: CGFloat
+private struct ColumnItem: Identifiable {
+    let globalIndex: Int
     let height: CGFloat
-    var id: Int { index }
+    var id: Int { globalIndex }
 }
 
-private struct LayoutResult {
-    let items: [LayoutItem]
-    let totalHeight: CGFloat
+private struct ContainerWidthKey: PreferenceKey {
+    nonisolated(unsafe) static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
 }

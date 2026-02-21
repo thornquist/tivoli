@@ -3,7 +3,7 @@ use crate::models::*;
 
 // --- Filter DSL query builder ---
 
-pub fn build_image_query(filters: &[FilterClause]) -> Result<(String, Vec<String>), AppError> {
+fn build_where_clause(filters: &[FilterClause]) -> Result<(Vec<String>, Vec<String>), AppError> {
     let mut conditions: Vec<String> = Vec::new();
     let mut params: Vec<String> = Vec::new();
 
@@ -79,13 +79,11 @@ pub fn build_image_query(filters: &[FilterClause]) -> Result<(String, Vec<String
                         ));
                     }
                     FilterOp::Exact => {
-                        // Must have all selected tags
                         conditions.push(format!(
                             "i.uuid IN (SELECT image_uuid FROM image_tags WHERE tag_uuid IN ({placeholders}) GROUP BY image_uuid HAVING COUNT(DISTINCT tag_uuid) = {})",
                             vals.len()
                         ));
                         params.extend(vals.iter().map(|v| v.to_string()));
-                        // Must not have other tags from the same group(s)
                         let placeholders2 = make_placeholders(vals.len());
                         conditions.push(format!(
                             "i.uuid NOT IN (SELECT it2.image_uuid FROM image_tags it2 JOIN tags t2 ON it2.tag_uuid = t2.uuid WHERE t2.tag_group_uuid IN (SELECT tag_group_uuid FROM tags WHERE uuid IN ({placeholders2})) AND it2.tag_uuid NOT IN ({placeholders2}))"
@@ -100,7 +98,6 @@ pub fn build_image_query(filters: &[FilterClause]) -> Result<(String, Vec<String
                     }
                     _ => unreachable!(),
                 }
-                // For exact, params are already added inline above
                 if clause.op == FilterOp::Exact {
                     // already handled
                 } else {
@@ -110,13 +107,17 @@ pub fn build_image_query(filters: &[FilterClause]) -> Result<(String, Vec<String
         }
     }
 
+    Ok((conditions, params))
+}
+
+pub fn build_image_query(filters: &[FilterClause]) -> Result<(String, Vec<String>), AppError> {
+    let (conditions, params) = build_where_clause(filters)?;
     let mut sql = "SELECT i.uuid, i.path, i.collection, i.gallery, i.width, i.height, i.file_size FROM images i".to_string();
     if !conditions.is_empty() {
         sql.push_str(" WHERE ");
         sql.push_str(&conditions.join(" AND "));
     }
     sql.push_str(" ORDER BY i.collection, i.gallery, i.path");
-
     Ok((sql, params))
 }
 
@@ -172,87 +173,87 @@ pub fn query_filter_options(
     conn: &rusqlite::Connection,
     filters: &[FilterClause],
 ) -> Result<FilterOptions, AppError> {
-    let (image_sql, params) = build_image_query(filters)?;
-    // Use the image query as a subquery (strip the ORDER BY for efficiency)
-    let subquery = image_sql.replace(" ORDER BY i.collection, i.gallery, i.path", "");
+    let (conditions, params) = build_where_clause(filters)?;
     let param_refs: Vec<&dyn rusqlite::types::ToSql> =
         params.iter().map(|s| s as &dyn rusqlite::types::ToSql).collect();
 
-    // Count
-    let count_sql = format!("SELECT COUNT(*) FROM ({subquery})");
-    let image_count: u32 = conn
-        .query_row(&count_sql, param_refs.as_slice(), |row| row.get(0))?;
+    // Materialize filtered image set into a temp table (evaluated once)
+    let _ = conn.execute("DROP TABLE IF EXISTS _filtered", []);
+    let mut create_sql =
+        "CREATE TEMP TABLE _filtered AS SELECT uuid, collection, gallery FROM images i".to_string();
+    if !conditions.is_empty() {
+        create_sql.push_str(" WHERE ");
+        create_sql.push_str(&conditions.join(" AND "));
+    }
+    conn.execute(&create_sql, param_refs.as_slice())?;
 
-    // Distinct collections
-    let coll_sql = format!(
-        "SELECT DISTINCT collection FROM ({subquery}) ORDER BY collection",
-    );
-    let mut stmt = conn.prepare(&coll_sql)?;
-    let collections: Vec<String> = stmt
-        .query_map(param_refs.as_slice(), |row| row.get(0))?
-        .collect::<Result<_, _>>()?;
+    // Run analytical queries against the materialized temp table
+    let result = (|| -> Result<FilterOptions, AppError> {
+        let image_count: u32 =
+            conn.query_row("SELECT COUNT(*) FROM _filtered", [], |row| row.get(0))?;
 
-    // Distinct galleries
-    let gal_sql = format!(
-        "SELECT DISTINCT collection, gallery FROM ({subquery}) ORDER BY collection, gallery",
-    );
-    let mut stmt = conn.prepare(&gal_sql)?;
-    let galleries: Vec<GallerySummary> = stmt
-        .query_map(param_refs.as_slice(), |row| {
-            Ok(GallerySummary {
-                collection: row.get(0)?,
-                name: row.get(1)?,
-                image_count: 0,
-            })
-        })?
-        .collect::<Result<_, _>>()?;
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT collection FROM _filtered ORDER BY collection",
+        )?;
+        let collections: Vec<String> = stmt
+            .query_map([], |row| row.get(0))?
+            .collect::<Result<_, _>>()?;
 
-    // Distinct models
-    let model_sql = format!(
-        "SELECT DISTINCT m.uuid, m.name, m.collection \
-         FROM image_models im \
-         JOIN models m ON im.model_uuid = m.uuid \
-         WHERE im.image_uuid IN (SELECT uuid FROM ({subquery})) \
-         ORDER BY m.collection, m.name",
-    );
-    let mut stmt = conn.prepare(&model_sql)?;
-    let models: Vec<Model> = stmt
-        .query_map(param_refs.as_slice(), |row| {
-            Ok(Model {
-                uuid: row.get(0)?,
-                name: row.get(1)?,
-                collection: row.get(2)?,
-            })
-        })?
-        .collect::<Result<_, _>>()?;
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT collection, gallery FROM _filtered ORDER BY collection, gallery",
+        )?;
+        let galleries: Vec<GallerySummary> = stmt
+            .query_map([], |row| {
+                Ok(GallerySummary {
+                    collection: row.get(0)?,
+                    name: row.get(1)?,
+                    image_count: 0,
+                })
+            })?
+            .collect::<Result<_, _>>()?;
 
-    // Distinct tags
-    let tag_sql = format!(
-        "SELECT DISTINCT t.uuid, t.name, tg.name \
-         FROM image_tags it \
-         JOIN tags t ON it.tag_uuid = t.uuid \
-         JOIN tag_groups tg ON t.tag_group_uuid = tg.uuid \
-         WHERE it.image_uuid IN (SELECT uuid FROM ({subquery})) \
-         ORDER BY tg.name, t.name",
-    );
-    let mut stmt = conn.prepare(&tag_sql)?;
-    let tags: Vec<TagRef> = stmt
-        .query_map(param_refs.as_slice(), |row| {
-            Ok(TagRef {
-                uuid: row.get(0)?,
-                name: row.get(1)?,
-                group: row.get(2)?,
-            })
-        })?
-        .collect::<Result<_, _>>()?;
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT m.uuid, m.name, m.collection \
+             FROM image_models im \
+             JOIN models m ON im.model_uuid = m.uuid \
+             WHERE im.image_uuid IN (SELECT uuid FROM _filtered) \
+             ORDER BY m.collection, m.name",
+        )?;
+        let models: Vec<Model> = stmt
+            .query_map([], |row| {
+                Ok(Model {
+                    uuid: row.get(0)?,
+                    name: row.get(1)?,
+                    collection: row.get(2)?,
+                })
+            })?
+            .collect::<Result<_, _>>()?;
 
-    Ok(FilterOptions {
-        image_count,
-        collections,
-        galleries,
-        models,
-        tags,
-    })
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT t.uuid, t.name, tg.name \
+             FROM image_tags it \
+             JOIN tags t ON it.tag_uuid = t.uuid \
+             JOIN tag_groups tg ON t.tag_group_uuid = tg.uuid \
+             WHERE it.image_uuid IN (SELECT uuid FROM _filtered) \
+             ORDER BY tg.name, t.name",
+        )?;
+        let tags: Vec<TagRef> = stmt
+            .query_map([], |row| {
+                Ok(TagRef {
+                    uuid: row.get(0)?,
+                    name: row.get(1)?,
+                    group: row.get(2)?,
+                })
+            })?
+            .collect::<Result<_, _>>()?;
+
+        Ok(FilterOptions { image_count, collections, galleries, models, tags })
+    })();
+
+    // Always clean up
+    let _ = conn.execute("DROP TABLE IF EXISTS _filtered", []);
+
+    result
 }
 
 pub fn query_image_detail(

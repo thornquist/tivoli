@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CachedAsyncImage: View {
     let url: URL
+    var contentMode: ContentMode = .fill
     @State private var image: UIImage?
     @State private var isLoading = true
 
@@ -11,7 +12,7 @@ struct CachedAsyncImage: View {
                 if let image {
                     Image(uiImage: image)
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
+                        .aspectRatio(contentMode: contentMode)
                         .frame(width: geo.size.width, height: geo.size.height)
                         .clipped()
                 } else if isLoading {
