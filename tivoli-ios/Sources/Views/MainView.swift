@@ -15,6 +15,9 @@ struct MainView: View {
     @State private var selectedTagsByGroup: [String: Set<String>] = [:]
     @State private var tagOpByGroup: [String: FilterOp] = [:]
 
+    // Filter options (from server)
+    @State private var filterOptions: FilterOptions?
+
     // Results
     @State private var images: [ImageSummary] = []
     @State private var isLoadingData = true
@@ -25,19 +28,18 @@ struct MainView: View {
     // Navigation
     @State private var currentPage = 0
 
-    /// Collections that appear on at least one image in the current result set
+    private var imageCount: Int { filterOptions?.imageCount ?? 0 }
+
     private var availableCollections: Set<String> {
-        Set(images.map(\.collection))
+        Set(filterOptions?.collections ?? [])
     }
 
-    /// Model UUIDs that appear on at least one image in the current result set
     private var availableModelUUIDs: Set<String> {
-        Set(images.flatMap { $0.models.map(\.uuid) })
+        Set(filterOptions?.models.map(\.uuid) ?? [])
     }
 
-    /// Tag UUIDs that appear on at least one image in the current result set
     private var availableTagUUIDs: Set<String> {
-        Set(images.flatMap { $0.tags.map(\.uuid) })
+        Set(filterOptions?.tags.map(\.uuid) ?? [])
     }
 
     private var hasActiveFilters: Bool {
@@ -65,6 +67,11 @@ struct MainView: View {
         .onChange(of: modelOp) { _, _ in debouncedSearch() }
         .onChange(of: selectedTagsByGroup) { _, _ in debouncedSearch() }
         .onChange(of: tagOpByGroup) { _, _ in debouncedSearch() }
+        .onChange(of: currentPage) { _, newPage in
+            if newPage == 1 {
+                Task { await fetchImages() }
+            }
+        }
         .fullScreenCover(item: $selectedIndex) { index in
             ImagePagerView(images: $images, initialIndex: index)
         }
@@ -119,16 +126,16 @@ struct MainView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             } else {
-                Text("\(images.count)")
+                Text("\(imageCount)")
                     .font(.system(size: 48, weight: .bold, design: .rounded))
                     .foregroundStyle(.primary)
-                Text(images.count == 1 ? "image" : "images")
+                Text(imageCount == 1 ? "image" : "images")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .textCase(.uppercase)
                     .tracking(1)
 
-                if !images.isEmpty {
+                if imageCount > 0 {
                     Button {
                         withAnimation { currentPage = 1 }
                     } label: {
@@ -324,19 +331,8 @@ struct MainView: View {
 
     // MARK: - Search
 
-    private func debouncedSearch() {
-        searchTask?.cancel()
-        searchTask = Task {
-            try? await Task.sleep(for: .milliseconds(300))
-            guard !Task.isCancelled else { return }
-            await performSearch()
-        }
-    }
-
-    private func performSearch() async {
-        isSearching = true
+    private var currentFilters: [FilterClause] {
         var filters: [FilterClause] = []
-
         if let col = selectedCollection {
             filters.append(FilterClause(field: .collection, op: .eq, value: .single(col)))
         }
@@ -355,15 +351,38 @@ struct MainView: View {
                 )
             }
         }
+        return filters
+    }
 
+    private func debouncedSearch() {
+        searchTask?.cancel()
+        searchTask = Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            await performSearch()
+        }
+    }
+
+    private func performSearch() async {
+        isSearching = true
         do {
-            images = try await api.searchImages(filters: filters)
+            filterOptions = try await api.searchFilterOptions(filters: currentFilters)
+        } catch {
+            if !Task.isCancelled {
+                filterOptions = nil
+            }
+        }
+        isSearching = false
+    }
+
+    private func fetchImages() async {
+        do {
+            images = try await api.searchImages(filters: currentFilters)
         } catch {
             if !Task.isCancelled {
                 images = []
             }
         }
-        isSearching = false
     }
 }
 

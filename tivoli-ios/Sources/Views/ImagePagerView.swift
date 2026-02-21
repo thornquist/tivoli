@@ -55,7 +55,7 @@ struct ImagePagerView: View {
             if showTagEditor, currentIndex < images.count {
                 VStack {
                     Spacer()
-                    TagEditorView(image: $images[currentIndex])
+                    TagEditorView(imageUUID: images[currentIndex].uuid)
                         .transition(.move(edge: .bottom))
                 }
             }

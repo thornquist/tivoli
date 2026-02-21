@@ -254,6 +254,70 @@ pub fn query_filter_options(
     })
 }
 
+pub fn query_image_detail(
+    conn: &rusqlite::Connection,
+    uuid: &str,
+) -> Result<ImageDetail, AppError> {
+    let image = conn
+        .query_row(
+            "SELECT uuid, path, collection, gallery, width, height FROM images WHERE uuid = ?",
+            [uuid],
+            |row| {
+                Ok(ImageRow {
+                    uuid: row.get(0)?,
+                    path: row.get(1)?,
+                    collection: row.get(2)?,
+                    gallery: row.get(3)?,
+                    width: row.get(4)?,
+                    height: row.get(5)?,
+                })
+            },
+        )
+        .map_err(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => {
+                AppError::NotFound("Image not found".into())
+            }
+            other => AppError::from(other),
+        })?;
+
+    let mut stmt = conn.prepare(
+        "SELECT m.uuid, m.name, m.collection FROM image_models im JOIN models m ON im.model_uuid = m.uuid WHERE im.image_uuid = ? ORDER BY m.name",
+    )?;
+    let models: Vec<Model> = stmt
+        .query_map([uuid], |row| {
+            Ok(Model {
+                uuid: row.get(0)?,
+                name: row.get(1)?,
+                collection: row.get(2)?,
+            })
+        })?
+        .collect::<Result<_, _>>()?;
+
+    let mut stmt = conn.prepare(
+        "SELECT t.uuid, t.name, tg.name FROM image_tags it JOIN tags t ON it.tag_uuid = t.uuid JOIN tag_groups tg ON t.tag_group_uuid = tg.uuid WHERE it.image_uuid = ? ORDER BY tg.name, t.name",
+    )?;
+    let tags: Vec<TagRef> = stmt
+        .query_map([uuid], |row| {
+            Ok(TagRef {
+                uuid: row.get(0)?,
+                name: row.get(1)?,
+                group: row.get(2)?,
+            })
+        })?
+        .collect::<Result<_, _>>()?;
+
+    Ok(ImageDetail {
+        uuid: image.uuid,
+        path: image.path,
+        collection: image.collection,
+        gallery: image.gallery,
+        width: image.width,
+        height: image.height,
+        models,
+        tags,
+    })
+}
+
 pub fn replace_image_tags(
     conn: &rusqlite::Connection,
     image_uuid: &str,

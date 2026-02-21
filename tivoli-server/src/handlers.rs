@@ -32,6 +32,15 @@ pub async fn search_filter_options(
     Ok(Json(options))
 }
 
+pub async fn get_image_detail(
+    State(state): State<Arc<AppState>>,
+    Path(uuid): Path<String>,
+) -> Result<Json<ImageDetail>, AppError> {
+    let conn = state.pool.get()?;
+    let detail = queries::query_image_detail(&conn, &uuid)?;
+    Ok(Json(detail))
+}
+
 pub async fn get_image_file(
     State(state): State<Arc<AppState>>,
     Path(uuid): Path<String>,

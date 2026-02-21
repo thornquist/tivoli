@@ -6,6 +6,8 @@ struct WaterfallGrid<Content: View>: View {
     let spacing: CGFloat
     @ViewBuilder let content: (Int, ImageSummary) -> Content
 
+    @State private var viewWidth: CGFloat = 0
+
     var body: some View {
         GeometryReader { geo in
             let columnWidth = (geo.size.width - spacing * CGFloat(columnCount - 1)) / CGFloat(columnCount)
@@ -20,6 +22,8 @@ struct WaterfallGrid<Content: View>: View {
                 }
             }
             .frame(width: geo.size.width, height: layout.totalHeight, alignment: .topLeading)
+            .onAppear { viewWidth = geo.size.width }
+            .onChange(of: geo.size.width) { _, w in viewWidth = w }
         }
         .frame(height: estimateTotalHeight())
     }
@@ -43,9 +47,9 @@ struct WaterfallGrid<Content: View>: View {
     }
 
     private func estimateTotalHeight() -> CGFloat {
-        guard !images.isEmpty else { return 0 }
+        guard !images.isEmpty, viewWidth > 0 else { return 0 }
         let avgAspect = images.reduce(0.0) { $0 + $1.aspectRatio } / CGFloat(images.count)
-        let estimatedRowHeight = UIScreen.main.bounds.width / CGFloat(columnCount) / avgAspect
+        let estimatedRowHeight = viewWidth / CGFloat(columnCount) / avgAspect
         let rows = ceil(CGFloat(images.count) / CGFloat(columnCount))
         return rows * (estimatedRowHeight + spacing)
     }

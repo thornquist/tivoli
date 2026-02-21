@@ -63,6 +63,15 @@ final class APIClient {
         return try await post("/images/search", body: body)
     }
 
+    func searchFilterOptions(filters: [FilterClause]) async throws -> FilterOptions {
+        let body = SearchRequest(filters: filters)
+        return try await post("/images/search/options", body: body)
+    }
+
+    func fetchImageDetail(uuid: String) async throws -> ImageDetail {
+        try await get("/images/\(uuid)")
+    }
+
     func updateImageTags(imageUUID: String, tagUUIDs: [String]) async throws {
         let body = ["tag_uuids": tagUUIDs]
         try await putNoContent("/images/\(imageUUID)/tags", body: body)

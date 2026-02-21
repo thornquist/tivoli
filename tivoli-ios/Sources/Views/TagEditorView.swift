@@ -1,20 +1,25 @@
 import SwiftUI
 
 struct TagEditorView: View {
-    @Binding var image: ImageSummary
+    let imageUUID: String
     @Environment(APIClient.self) private var api
     @State private var tagGroups: [TagGroup] = []
+    @State private var imageDetail: ImageDetail?
     @State private var isLoading = true
+
+    private var currentTagUUIDs: Set<String> {
+        Set(imageDetail?.tags.map(\.uuid) ?? [])
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Models
-            if !image.models.isEmpty {
+            if let models = imageDetail?.models, !models.isEmpty {
                 HStack {
                     Text("Models:")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    ForEach(image.models) { model in
+                    ForEach(models) { model in
                         Text(model.name.capitalized)
                             .font(.caption.bold())
                     }
@@ -35,9 +40,7 @@ struct TagEditorView: View {
 
                                 FlowLayout(spacing: 6) {
                                     ForEach(group.tags) { tag in
-                                        let isSelected = image.tags.contains {
-                                            $0.uuid == tag.uuid
-                                        }
+                                        let isSelected = currentTagUUIDs.contains(tag.uuid)
                                         Button {
                                             Task { await toggleTag(tag, group: group.name) }
                                         } label: {
@@ -71,12 +74,15 @@ struct TagEditorView: View {
         .padding()
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 20))
         .padding()
-        .task { await loadTags() }
+        .task { await loadData() }
     }
 
-    private func loadTags() async {
+    private func loadData() async {
+        async let detail = api.fetchImageDetail(uuid: imageUUID)
+        async let groups = api.fetchTags()
         do {
-            tagGroups = try await api.fetchTags()
+            imageDetail = try await detail
+            tagGroups = try await groups
         } catch {
             // error state
         }
@@ -84,18 +90,35 @@ struct TagEditorView: View {
     }
 
     private func toggleTag(_ tag: Tag, group: String) async {
+        guard let detail = imageDetail else { return }
+
         // Optimistic update
-        if let idx = image.tags.firstIndex(where: { $0.uuid == tag.uuid }) {
-            image.tags.remove(at: idx)
+        if let idx = detail.tags.firstIndex(where: { $0.uuid == tag.uuid }) {
+            var tags = detail.tags
+            tags.remove(at: idx)
+            imageDetail = ImageDetail(
+                uuid: detail.uuid, path: detail.path,
+                collection: detail.collection, gallery: detail.gallery,
+                width: detail.width, height: detail.height,
+                models: detail.models, tags: tags
+            )
         } else {
-            image.tags.append(TagRef(uuid: tag.uuid, name: tag.name, group: group))
+            var tags = detail.tags
+            tags.append(TagRef(uuid: tag.uuid, name: tag.name, group: group))
+            imageDetail = ImageDetail(
+                uuid: detail.uuid, path: detail.path,
+                collection: detail.collection, gallery: detail.gallery,
+                width: detail.width, height: detail.height,
+                models: detail.models, tags: tags
+            )
         }
 
-        let tagUUIDs = image.tags.map(\.uuid)
+        let tagUUIDs = imageDetail?.tags.map(\.uuid) ?? []
         do {
-            try await api.updateImageTags(imageUUID: image.uuid, tagUUIDs: tagUUIDs)
+            try await api.updateImageTags(imageUUID: imageUUID, tagUUIDs: tagUUIDs)
         } catch {
-            // Revert on failure — reload from server would be better
+            // Revert on failure by reloading
+            imageDetail = try? await api.fetchImageDetail(uuid: imageUUID)
         }
     }
 }
