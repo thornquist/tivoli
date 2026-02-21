@@ -37,6 +37,18 @@ async fn search_count(client: &Client, base: &str, filters: Value) -> usize {
     v.as_array().unwrap().len()
 }
 
+async fn search_options(client: &Client, base: &str, filters: Value) -> Value {
+    client
+        .post(&format!("{base}/images/search/options"))
+        .json(&json!({ "filters": filters }))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap()
+}
+
 // ─── GET /collections ───
 
 #[tokio::test]
@@ -368,20 +380,14 @@ async fn test_search_models_exact() {
     let client = Client::new();
     let emma = get_model_uuid(&client, &base, "emma", "lumiere-studio").await;
 
-    let results = search(
+    let count = search_count(
         &client,
         &base,
         json!([{"field": "models", "op": "exact", "value": [emma]}]),
     )
     .await;
-    let arr = results.as_array().unwrap();
     // emma solo shots only (excludes duo with sofia)
-    assert_eq!(arr.len(), 2);
-    for img in arr {
-        let models = img["models"].as_array().unwrap();
-        assert_eq!(models.len(), 1);
-        assert_eq!(models[0]["name"].as_str().unwrap(), "emma");
-    }
+    assert_eq!(count, 2);
 }
 
 #[tokio::test]
@@ -430,25 +436,13 @@ async fn test_search_tags_all_of() {
     let outdoor = get_tag_uuid(&client, &base, "outdoor").await;
     let casual = get_tag_uuid(&client, &base, "casual").await;
 
-    let results = search(
+    let count = search_count(
         &client,
         &base,
         json!([{"field": "tags", "op": "all_of", "value": [outdoor, casual]}]),
     )
     .await;
-    let arr = results.as_array().unwrap();
-    assert!(arr.len() > 0);
-    // Verify each result has both tags
-    for img in arr {
-        let tag_names: Vec<&str> = img["tags"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|t| t["name"].as_str().unwrap())
-            .collect();
-        assert!(tag_names.contains(&"outdoor"));
-        assert!(tag_names.contains(&"casual"));
-    }
+    assert!(count > 0);
 }
 
 #[tokio::test]
@@ -457,23 +451,15 @@ async fn test_search_tags_none_of() {
     let client = Client::new();
     let studio = get_tag_uuid(&client, &base, "studio").await;
 
-    let results = search(
+    let count = search_count(
         &client,
         &base,
         json!([{"field": "tags", "op": "none_of", "value": [studio]}]),
     )
     .await;
-    let arr = results.as_array().unwrap();
-    // No result should have the "studio" tag
-    for img in arr {
-        let tag_names: Vec<&str> = img["tags"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|t| t["name"].as_str().unwrap())
-            .collect();
-        assert!(!tag_names.contains(&"studio"));
-    }
+    // Should exclude images with studio tag but still have some results
+    assert!(count > 0);
+    assert!(count < 55);
 }
 
 // ─── POST /images/search — combined filters ───
@@ -506,7 +492,7 @@ async fn test_search_multiple_tag_clauses() {
     let outdoor = get_tag_uuid(&client, &base, "outdoor").await;
 
     // Any of [natural-light, golden-hour] AND all of [outdoor]
-    let results = search(
+    let count = search_count(
         &client,
         &base,
         json!([
@@ -515,20 +501,7 @@ async fn test_search_multiple_tag_clauses() {
         ]),
     )
     .await;
-    let arr = results.as_array().unwrap();
-    assert!(arr.len() > 0);
-    for img in arr {
-        let tag_names: Vec<&str> = img["tags"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|t| t["name"].as_str().unwrap())
-            .collect();
-        assert!(tag_names.contains(&"outdoor"));
-        assert!(
-            tag_names.contains(&"natural-light") || tag_names.contains(&"golden-hour")
-        );
-    }
+    assert!(count > 0);
 }
 
 #[tokio::test]
@@ -538,7 +511,7 @@ async fn test_search_model_exact_and_tags() {
     let raven = get_model_uuid(&client, &base, "raven", "noir-atelier").await;
     let moody = get_tag_uuid(&client, &base, "moody").await;
 
-    let results = search(
+    let count = search_count(
         &client,
         &base,
         json!([
@@ -547,12 +520,7 @@ async fn test_search_model_exact_and_tags() {
         ]),
     )
     .await;
-    let arr = results.as_array().unwrap();
-    for img in arr {
-        let models = img["models"].as_array().unwrap();
-        assert_eq!(models.len(), 1);
-        assert_eq!(models[0]["name"].as_str().unwrap(), "raven");
-    }
+    assert!(count > 0);
 }
 
 #[tokio::test]
@@ -620,64 +588,79 @@ async fn test_search_malformed_json() {
 // ─── POST /images/search — response shape ───
 
 #[tokio::test]
-async fn test_search_results_include_models() {
+async fn test_search_returns_bare_image_rows() {
     let base = spawn_app().await;
     let client = Client::new();
     let results = search(
         &client,
         &base,
-        json!([{"field": "collection", "op": "eq", "value": "lumiere-studio"},
-               {"field": "gallery", "op": "eq", "value": "summer-editorial"}]),
+        json!([{"field": "gallery", "op": "eq", "value": "summer-editorial"}]),
     )
     .await;
     let arr = results.as_array().unwrap();
+    assert_eq!(arr.len(), 5);
     for img in arr {
-        assert!(img["models"].is_array());
-        for m in img["models"].as_array().unwrap() {
-            assert!(m["uuid"].is_string());
-            assert!(m["name"].is_string());
-        }
+        assert!(img["uuid"].is_string());
+        assert!(img["path"].is_string());
+        assert!(img["collection"].is_string());
+        assert!(img["gallery"].is_string());
+        // No models/tags enrichment
+        assert!(img.get("models").is_none());
+        assert!(img.get("tags").is_none());
     }
 }
 
+// ─── POST /images/search/options ───
+
 #[tokio::test]
-async fn test_search_results_include_tags() {
+async fn test_options_no_filters() {
     let base = spawn_app().await;
     let client = Client::new();
-    let results = search(
+    let opts = search_options(&client, &base, json!([])).await;
+
+    assert_eq!(opts["image_count"].as_u64().unwrap(), 55);
+    assert_eq!(opts["collections"].as_array().unwrap().len(), 4);
+    assert_eq!(opts["galleries"].as_array().unwrap().len(), 12);
+    assert_eq!(opts["models"].as_array().unwrap().len(), 25);
+    assert_eq!(opts["tags"].as_array().unwrap().len(), 34);
+}
+
+#[tokio::test]
+async fn test_options_filtered_by_collection() {
+    let base = spawn_app().await;
+    let client = Client::new();
+    let opts = search_options(
         &client,
         &base,
-        json!([{"field": "gallery", "op": "eq", "value": "film-noir"}]),
+        json!([{"field": "collection", "op": "eq", "value": "lumiere-studio"}]),
     )
     .await;
-    let arr = results.as_array().unwrap();
-    for img in arr {
-        assert!(img["tags"].is_array());
-        for t in img["tags"].as_array().unwrap() {
-            assert!(t["uuid"].is_string());
-            assert!(t["name"].is_string());
-            assert!(t["group"].is_string());
-        }
+
+    assert_eq!(opts["image_count"].as_u64().unwrap(), 14);
+    assert_eq!(opts["collections"].as_array().unwrap().len(), 1);
+    assert_eq!(opts["galleries"].as_array().unwrap().len(), 3);
+    // Only models from lumiere-studio
+    for m in opts["models"].as_array().unwrap() {
+        assert_eq!(m["collection"].as_str().unwrap(), "lumiere-studio");
     }
 }
 
 #[tokio::test]
-async fn test_search_duo_image_has_two_models() {
+async fn test_options_filtered_by_model() {
     let base = spawn_app().await;
     let client = Client::new();
     let emma = get_model_uuid(&client, &base, "emma", "lumiere-studio").await;
-    let sofia = get_model_uuid(&client, &base, "sofia", "lumiere-studio").await;
 
-    let results = search(
+    let opts = search_options(
         &client,
         &base,
-        json!([{"field": "models", "op": "all_of", "value": [emma, sofia]}]),
+        json!([{"field": "models", "op": "any_of", "value": [emma]}]),
     )
     .await;
-    let arr = results.as_array().unwrap();
-    assert_eq!(arr.len(), 1);
-    let models = arr[0]["models"].as_array().unwrap();
-    assert_eq!(models.len(), 2);
+
+    // emma has 3 images (2 solo + 1 duo with sofia)
+    assert_eq!(opts["image_count"].as_u64().unwrap(), 3);
+    assert_eq!(opts["collections"].as_array().unwrap().len(), 1);
 }
 
 // ─── GET /images/{uuid}/file ───

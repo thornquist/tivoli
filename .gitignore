@@ -1,1 +1,4 @@
 target/
+data/tivoli.db
+data/tivoli.db-shm
+data/tivoli.db-wal
