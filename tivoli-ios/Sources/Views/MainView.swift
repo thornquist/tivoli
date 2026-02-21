@@ -22,6 +22,7 @@ struct MainView: View {
     @State private var images: [ImageSummary] = []
     @State private var isLoadingData = true
     @State private var isSearching = false
+    @State private var isLoadingImages = false
     @State private var selectedIndex: Int?
     @State private var searchTask: Task<Void, Never>?
 
@@ -157,17 +158,25 @@ struct MainView: View {
     // MARK: - Grid Page
 
     private var gridPage: some View {
-        WaterfallGrid(images: images, columnCount: 3, spacing: 2, prefetchCount: 500, imageURL: { api.imageURL(uuid: $0.uuid) }) { index, image in
-            Button {
-                selectedIndex = index
-            } label: {
-                CachedAsyncImage(url: api.imageURL(uuid: image.uuid))
-                    .aspectRatio(image.aspectRatio, contentMode: .fill)
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            if isLoadingImages {
+                ProgressView()
+                    .tint(.white)
+            } else {
+                WaterfallGrid(images: images, columnCount: 3, spacing: 2, prefetchCount: 500, imageURL: { api.imageURL(uuid: $0.uuid) }) { index, image in
+                    Button {
+                        selectedIndex = index
+                    } label: {
+                        CachedAsyncImage(url: api.imageURL(uuid: image.uuid))
+                            .aspectRatio(image.aspectRatio, contentMode: .fill)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(2)
             }
-            .buttonStyle(.plain)
         }
-        .padding(2)
-        .background(.black)
     }
 
     // MARK: - Filter Panel
@@ -374,6 +383,7 @@ struct MainView: View {
     }
 
     private func fetchImages() async {
+        isLoadingImages = true
         do {
             images = try await api.searchImages(filters: currentFilters)
         } catch {
@@ -381,6 +391,7 @@ struct MainView: View {
                 images = []
             }
         }
+        isLoadingImages = false
     }
 }
 

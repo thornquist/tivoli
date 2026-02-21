@@ -11,33 +11,8 @@ struct ZoomableImage: View {
         CachedAsyncImage(url: url, contentMode: .fit)
             .scaleEffect(scale)
             .offset(offset)
-            .gesture(
-                MagnifyGesture()
-                    .onChanged { value in
-                        scale = lastScale * value.magnification
-                    }
-                    .onEnded { _ in
-                        if scale < 1 {
-                            withAnimation(.snappy(duration: 0.25)) { scale = 1 }
-                            lastScale = 1
-                        } else {
-                            lastScale = scale
-                        }
-                    }
-                    .simultaneously(with:
-                        DragGesture()
-                            .onChanged { value in
-                                guard scale > 1 else { return }
-                                offset = CGSize(
-                                    width: lastOffset.width + value.translation.width,
-                                    height: lastOffset.height + value.translation.height
-                                )
-                            }
-                            .onEnded { _ in
-                                lastOffset = offset
-                            }
-                    )
-            )
+            .gesture(magnifyGesture)
+            .gesture(panGesture, isEnabled: scale > 1)
             .onTapGesture(count: 2) {
                 withAnimation(.snappy(duration: 0.25)) {
                     if scale > 1 {
@@ -56,6 +31,34 @@ struct ZoomableImage: View {
                 lastScale = 1
                 offset = .zero
                 lastOffset = .zero
+            }
+    }
+
+    private var magnifyGesture: some Gesture {
+        MagnifyGesture()
+            .onChanged { value in
+                scale = lastScale * value.magnification
+            }
+            .onEnded { _ in
+                if scale < 1 {
+                    withAnimation(.snappy(duration: 0.25)) { scale = 1 }
+                    lastScale = 1
+                } else {
+                    lastScale = scale
+                }
+            }
+    }
+
+    private var panGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                offset = CGSize(
+                    width: lastOffset.width + value.translation.width,
+                    height: lastOffset.height + value.translation.height
+                )
+            }
+            .onEnded { _ in
+                lastOffset = offset
             }
     }
 }

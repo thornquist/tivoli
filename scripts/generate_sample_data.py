@@ -269,6 +269,7 @@ def create_database(db_path, image_records, image_model_links, image_tag_links):
         )
     """)
     cur.execute("CREATE INDEX idx_image_models_model ON image_models(model_uuid)")
+    cur.execute("CREATE INDEX idx_image_models_image ON image_models(image_uuid)")
 
     # -- tag groups & tags
     cur.execute("""
@@ -295,6 +296,7 @@ def create_database(db_path, image_records, image_model_links, image_tag_links):
         )
     """)
     cur.execute("CREATE INDEX idx_image_tags_tag ON image_tags(tag_uuid)")
+    cur.execute("CREATE INDEX idx_image_tags_image ON image_tags(image_uuid)")
 
     # -- insert images
     cur.executemany(

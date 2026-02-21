@@ -67,6 +67,7 @@ def create_new_db(db_path: Path) -> sqlite3.Connection:
         )
     """)
     cur.execute("CREATE INDEX idx_image_models_model ON image_models(model_uuid)")
+    cur.execute("CREATE INDEX idx_image_models_image ON image_models(image_uuid)")
 
     cur.execute("""
         CREATE TABLE tag_groups (
@@ -92,6 +93,7 @@ def create_new_db(db_path: Path) -> sqlite3.Connection:
         )
     """)
     cur.execute("CREATE INDEX idx_image_tags_tag ON image_tags(tag_uuid)")
+    cur.execute("CREATE INDEX idx_image_tags_image ON image_tags(image_uuid)")
 
     conn.commit()
     return conn

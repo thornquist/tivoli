@@ -189,28 +189,28 @@ pub fn query_filter_options(
 
     // Run analytical queries against the materialized temp table
     let result = (|| -> Result<FilterOptions, AppError> {
-        let image_count: u32 =
-            conn.query_row("SELECT COUNT(*) FROM _filtered", [], |row| row.get(0))?;
-
+        // Single query for count + collections + galleries
         let mut stmt = conn.prepare(
-            "SELECT DISTINCT collection FROM _filtered ORDER BY collection",
+            "SELECT collection, gallery, (SELECT COUNT(*) FROM _filtered) AS total_count \
+             FROM _filtered GROUP BY collection, gallery ORDER BY collection, gallery",
         )?;
-        let collections: Vec<String> = stmt
-            .query_map([], |row| row.get(0))?
+        let mut image_count: u32 = 0;
+        let mut collections: Vec<String> = Vec::new();
+        let mut galleries: Vec<GallerySummary> = Vec::new();
+        let rows: Vec<(String, String, u32)> = stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
             .collect::<Result<_, _>>()?;
-
-        let mut stmt = conn.prepare(
-            "SELECT DISTINCT collection, gallery FROM _filtered ORDER BY collection, gallery",
-        )?;
-        let galleries: Vec<GallerySummary> = stmt
-            .query_map([], |row| {
-                Ok(GallerySummary {
-                    collection: row.get(0)?,
-                    name: row.get(1)?,
-                    image_count: 0,
-                })
-            })?
-            .collect::<Result<_, _>>()?;
+        for (collection, gallery, total) in &rows {
+            image_count = *total;
+            if collections.last().map_or(true, |c| c != collection) {
+                collections.push(collection.clone());
+            }
+            galleries.push(GallerySummary {
+                collection: collection.clone(),
+                name: gallery.clone(),
+                image_count: 0,
+            });
+        }
 
         let mut stmt = conn.prepare(
             "SELECT DISTINCT m.uuid, m.name, m.collection \
