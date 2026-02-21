@@ -10,7 +10,7 @@ async fn spawn_app() -> String {
 
     let (tx, rx) = oneshot::channel();
     tokio::spawn(async move {
-        let app = tivoli_server::build_app("../data/tivoli.db", "../galleries");
+        let app = tivoli_server::build_app("../data/sample.db", "../galleries");
         tx.send(()).unwrap();
         axum::serve(listener, app).await.unwrap();
     });
@@ -604,6 +604,9 @@ async fn test_search_returns_bare_image_rows() {
         assert!(img["path"].is_string());
         assert!(img["collection"].is_string());
         assert!(img["gallery"].is_string());
+        assert!(img["width"].is_u64());
+        assert!(img["height"].is_u64());
+        assert!(img["file_size"].is_u64());
         // No models/tags enrichment
         assert!(img.get("models").is_none());
         assert!(img.get("tags").is_none());

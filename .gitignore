@@ -1,4 +1,4 @@
 target/
-data/tivoli.db
-data/tivoli.db-shm
-data/tivoli.db-wal
+data/*.db
+data/*.db-shm
+data/*.db-wal

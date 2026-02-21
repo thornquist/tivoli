@@ -110,7 +110,7 @@ pub fn build_image_query(filters: &[FilterClause]) -> Result<(String, Vec<String
         }
     }
 
-    let mut sql = "SELECT i.uuid, i.path, i.collection, i.gallery, i.width, i.height FROM images i".to_string();
+    let mut sql = "SELECT i.uuid, i.path, i.collection, i.gallery, i.width, i.height, i.file_size FROM images i".to_string();
     if !conditions.is_empty() {
         sql.push_str(" WHERE ");
         sql.push_str(&conditions.join(" AND "));
@@ -162,6 +162,7 @@ pub fn query_images(
             gallery: row.get(3)?,
             width: row.get(4)?,
             height: row.get(5)?,
+            file_size: row.get(6)?,
         })
     })?;
     rows.collect()
@@ -260,7 +261,7 @@ pub fn query_image_detail(
 ) -> Result<ImageDetail, AppError> {
     let image = conn
         .query_row(
-            "SELECT uuid, path, collection, gallery, width, height FROM images WHERE uuid = ?",
+            "SELECT uuid, path, collection, gallery, width, height, file_size FROM images WHERE uuid = ?",
             [uuid],
             |row| {
                 Ok(ImageRow {
@@ -270,6 +271,7 @@ pub fn query_image_detail(
                     gallery: row.get(3)?,
                     width: row.get(4)?,
                     height: row.get(5)?,
+                    file_size: row.get(6)?,
                 })
             },
         )
@@ -313,6 +315,7 @@ pub fn query_image_detail(
         gallery: image.gallery,
         width: image.width,
         height: image.height,
+        file_size: image.file_size,
         models,
         tags,
     })

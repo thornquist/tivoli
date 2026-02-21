@@ -15,7 +15,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 GALLERIES_DIR = BASE_DIR / "galleries"
-DB_PATH = BASE_DIR / "data" / "tivoli.db"
+DB_PATH = BASE_DIR / "data" / "sample.db"
 
 SIZES = {
     "landscape_large": (1920, 1280),
@@ -243,7 +243,8 @@ def create_database(db_path, image_records, image_model_links, image_tag_links):
             collection TEXT NOT NULL,
             gallery TEXT NOT NULL,
             width INTEGER NOT NULL,
-            height INTEGER NOT NULL
+            height INTEGER NOT NULL,
+            file_size INTEGER NOT NULL
         )
     """)
     cur.execute("CREATE INDEX idx_images_collection ON images(collection)")
@@ -297,7 +298,7 @@ def create_database(db_path, image_records, image_model_links, image_tag_links):
 
     # -- insert images
     cur.executemany(
-        "INSERT INTO images (uuid, path, collection, gallery, width, height) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO images (uuid, path, collection, gallery, width, height, file_size) VALUES (?, ?, ?, ?, ?, ?, ?)",
         image_records,
     )
 
@@ -387,8 +388,9 @@ def main():
                     bg, accent, fonts, output_path,
                 )
 
+                file_size = output_path.stat().st_size
                 image_uuid = str(uuid.uuid4())
-                image_records.append((image_uuid, rel_path, collection_name, gallery_name, width, height))
+                image_records.append((image_uuid, rel_path, collection_name, gallery_name, width, height, file_size))
                 image_model_links.append((image_uuid, model_names, collection_name))
                 image_tag_links.append((image_uuid, tag_names))
                 image_count += 1

@@ -220,6 +220,9 @@ Array<{
   path: string;
   collection: string;
   gallery: string;
+  width: number;
+  height: number;
+  file_size: number;  // bytes
 }>
 ```
 
@@ -242,7 +245,10 @@ curl -X POST http://localhost:3000/images/search \
     "uuid": "afe2f112-...",
     "path": "lumiere-studio/summer-editorial/emma-garden-bench.jpg",
     "collection": "lumiere-studio",
-    "gallery": "summer-editorial"
+    "gallery": "summer-editorial",
+    "width": 1920,
+    "height": 1280,
+    "file_size": 52481
   }
 ]
 ```
@@ -299,6 +305,40 @@ curl -X POST http://localhost:3000/images/search/options \
     { "uuid": "ca5de307-...", "name": "outdoor", "group": "setting" }
   ]
 }
+```
+
+---
+
+### GET /images/{uuid}
+
+Get full image details including associated models and tags.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `uuid` | string | Image UUID |
+
+**Response:**
+
+```typescript
+{
+  uuid: string;
+  path: string;
+  collection: string;
+  gallery: string;
+  width: number;
+  height: number;
+  file_size: number;  // bytes
+  models: Array<{ uuid: string; name: string; collection: string }>;
+  tags: Array<{ uuid: string; name: string; group: string }>;
+}
+```
+
+**Example:**
+
+```bash
+curl http://localhost:3000/images/afe2f112-2c82-4de4-bc91-cc82b1739eda
 ```
 
 ---

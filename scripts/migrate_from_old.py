@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.10"
-# dependencies = []
+# dependencies = ["Pillow"]
 # ///
 
 """Migrate data from old tivoli app (flat image_tags table) to new normalized schema."""
@@ -14,9 +14,12 @@ from itertools import groupby
 from operator import itemgetter
 from pathlib import Path
 
+from PIL import Image as PILImage
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 OLD_DB_PATH = BASE_DIR / ".." / ".." / "tivoli" / "data" / "tivoli.db"
 NEW_DB_PATH = BASE_DIR / "data" / "tivoli.db"
+GALLERIES_DIR = Path("/run/media/tomas/T9/baccus/galleries/original")
 BATCH_SIZE = 10_000
 
 
@@ -37,7 +40,10 @@ def create_new_db(db_path: Path) -> sqlite3.Connection:
             uuid TEXT PRIMARY KEY,
             path TEXT NOT NULL,
             collection TEXT NOT NULL,
-            gallery TEXT NOT NULL
+            gallery TEXT NOT NULL,
+            width INTEGER NOT NULL,
+            height INTEGER NOT NULL,
+            file_size INTEGER NOT NULL
         )
     """)
     cur.execute("CREATE INDEX idx_images_collection ON images(collection)")
@@ -60,6 +66,7 @@ def create_new_db(db_path: Path) -> sqlite3.Connection:
             PRIMARY KEY (image_uuid, model_uuid)
         )
     """)
+    cur.execute("CREATE INDEX idx_image_models_model ON image_models(model_uuid)")
 
     cur.execute("""
         CREATE TABLE tag_groups (
@@ -84,6 +91,7 @@ def create_new_db(db_path: Path) -> sqlite3.Connection:
             PRIMARY KEY (image_uuid, tag_uuid)
         )
     """)
+    cur.execute("CREATE INDEX idx_image_tags_tag ON image_tags(tag_uuid)")
 
     conn.commit()
     return conn
@@ -181,12 +189,13 @@ def migrate_images(
         "SELECT image_path, tag_type, tag_value FROM image_tags ORDER BY image_path"
     )
 
-    image_batch: list[tuple[str, str, str, str]] = []
+    image_batch: list[tuple[str, str, str, str, int, int, int]] = []
     image_model_batch: list[tuple[str, str]] = []
     image_tag_batch: list[tuple[str, str]] = []
 
     count = 0
     skipped = 0
+    errors = 0
     total_model_links = 0
     total_tag_links = 0
     start_time = time.time()
@@ -194,7 +203,7 @@ def migrate_images(
     def flush():
         nonlocal image_batch, image_model_batch, image_tag_batch
         new_conn.executemany(
-            "INSERT INTO images (uuid, path, collection, gallery) VALUES (?, ?, ?, ?)",
+            "INSERT INTO images (uuid, path, collection, gallery, width, height, file_size) VALUES (?, ?, ?, ?, ?, ?, ?)",
             image_batch,
         )
         new_conn.executemany(
@@ -238,8 +247,19 @@ def migrate_images(
         slash_idx = gallery.find("/")
         gallery_stripped = gallery[slash_idx + 1 :] if slash_idx >= 0 else gallery
 
+        # Read image dimensions and file size from disk
+        full_path = GALLERIES_DIR / image_path
+        try:
+            with PILImage.open(full_path) as img:
+                img_width, img_height = img.size
+            img_file_size = full_path.stat().st_size
+        except Exception as e:
+            errors += 1
+            print(f"  WARNING: skipping {image_path}: {e}")
+            continue
+
         image_uuid = str(uuid.uuid4())
-        image_batch.append((image_uuid, image_path, collection, gallery_stripped))
+        image_batch.append((image_uuid, image_path, collection, gallery_stripped, img_width, img_height, img_file_size))
 
         for model_name in models:
             key = (model_name, collection)
@@ -276,6 +296,7 @@ def migrate_images(
     return {
         "images": count,
         "skipped": skipped,
+        "errors": errors,
         "image_models": total_model_links,
         "image_tags": total_tag_links,
     }
@@ -315,7 +336,9 @@ def main():
     print(f"  Image-models: {stats['image_models']:,}")
     print(f"  Image-tags:   {stats['image_tags']:,}")
     if stats["skipped"]:
-        print(f"  Skipped:      {stats['skipped']:,}")
+        print(f"  Skipped:      {stats['skipped']:,} (missing collection/gallery)")
+    if stats["errors"]:
+        print(f"  Errors:       {stats['errors']:,} (unreadable files)")
     print(f"  New DB size:  {db_size_mb:.1f} MB")
 
 

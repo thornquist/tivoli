@@ -133,6 +133,7 @@ pub struct ImageRow {
     pub gallery: String,
     pub width: u32,
     pub height: u32,
+    pub file_size: i64,
 }
 
 #[derive(Serialize)]
@@ -143,6 +144,7 @@ pub struct ImageDetail {
     pub gallery: String,
     pub width: u32,
     pub height: u32,
+    pub file_size: i64,
     pub models: Vec<Model>,
     pub tags: Vec<TagRef>,
 }
