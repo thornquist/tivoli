@@ -16,6 +16,7 @@
 		2E2106A1717423C93823A9BF /* TagGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3FB45237059E7DEBA1F32A9 /* TagGroup.swift */; };
 		3F19A1594358CC130EDCD9E8 /* Collection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8222BBF2D2DDB8440A6F5287 /* Collection.swift */; };
 		4061FFBD9E002F1097915D5B /* TivoliApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9EE9C1BAB064646480AECE9 /* TivoliApp.swift */; };
+		5D4FA8583D1CB8AF0A176740 /* ZoomableImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DB50AEDD0DA5E5DBE838DBC /* ZoomableImage.swift */; };
 		66147AEBAF4F727DA1AB2B98 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3239EDFE88BA0F8310BBA52 /* APIClient.swift */; };
 		6FFC275C2941DD6C03003DF7 /* ConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FEECDAE077C96FD120AECCA /* ConnectView.swift */; };
 		707FE2667B747E8A250E4734 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B0D0140D6B774A9E9356D74 /* ImageCache.swift */; };
@@ -44,6 +45,7 @@
 		8FEECDAE077C96FD120AECCA /* ConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectView.swift; sourceTree = "<group>"; };
 		91F2351FB435304CA4E8117F /* ModelRef.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelRef.swift; sourceTree = "<group>"; };
 		9C6ED5FFF821A934E94F1CB9 /* Tivoli.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Tivoli.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9DB50AEDD0DA5E5DBE838DBC /* ZoomableImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableImage.swift; sourceTree = "<group>"; };
 		9F2AB2760CA29F4EE9DA3870 /* ImageSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageSummary.swift; sourceTree = "<group>"; };
 		A8CA1C47C63716F9092C84F8 /* WaterfallGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaterfallGrid.swift; sourceTree = "<group>"; };
 		A9EE9C1BAB064646480AECE9 /* TivoliApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TivoliApp.swift; sourceTree = "<group>"; };
@@ -63,6 +65,7 @@
 				32E70B2D4C21BDD5EEEA0543 /* FilterChip.swift */,
 				2827A99C4E50AE73FC2C9C55 /* TagChipView.swift */,
 				A8CA1C47C63716F9092C84F8 /* WaterfallGrid.swift */,
+				9DB50AEDD0DA5E5DBE838DBC /* ZoomableImage.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -214,6 +217,7 @@
 				2877D815A34C2BE33DF4F752 /* TagRef.swift in Sources */,
 				4061FFBD9E002F1097915D5B /* TivoliApp.swift in Sources */,
 				18CE5EC35C510E516AD7FAFF /* WaterfallGrid.swift in Sources */,
+				5D4FA8583D1CB8AF0A176740 /* ZoomableImage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

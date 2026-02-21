@@ -157,18 +157,16 @@ struct MainView: View {
     // MARK: - Grid Page
 
     private var gridPage: some View {
-        ScrollView {
-            WaterfallGrid(images: images, columnCount: 3, spacing: 2) { index, image in
-                Button {
-                    selectedIndex = index
-                } label: {
-                    CachedAsyncImage(url: api.imageURL(uuid: image.uuid))
-                        .aspectRatio(image.aspectRatio, contentMode: .fill)
-                }
-                .buttonStyle(.plain)
+        WaterfallGrid(images: images, columnCount: 3, spacing: 2, prefetchCount: 500, imageURL: { api.imageURL(uuid: $0.uuid) }) { index, image in
+            Button {
+                selectedIndex = index
+            } label: {
+                CachedAsyncImage(url: api.imageURL(uuid: image.uuid))
+                    .aspectRatio(image.aspectRatio, contentMode: .fill)
             }
-            .padding(2)
+            .buttonStyle(.plain)
         }
+        .padding(2)
         .background(.black)
     }
 

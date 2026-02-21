@@ -22,7 +22,7 @@ struct ImagePagerView: View {
 
             TabView(selection: $currentIndex) {
                 ForEach(Array(images.enumerated()), id: \.element.id) { index, image in
-                    CachedAsyncImage(url: api.imageURL(uuid: image.uuid), contentMode: .fit)
+                    ZoomableImage(url: api.imageURL(uuid: image.uuid))
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .tag(index)
                         .onTapGesture {

@@ -4,38 +4,52 @@ struct WaterfallGrid<Content: View>: View {
     let images: [ImageSummary]
     let columnCount: Int
     let spacing: CGFloat
+    let prefetchCount: Int
+    let imageURL: (ImageSummary) -> URL
     @ViewBuilder let content: (Int, ImageSummary) -> Content
 
-    @State private var containerWidth: CGFloat = 0
-
     var body: some View {
-        let columnWidth = containerWidth > 0
-            ? (containerWidth - spacing * CGFloat(columnCount - 1)) / CGFloat(columnCount)
-            : 0
-        let columns = assignColumns(columnWidth: columnWidth)
+        GeometryReader { geo in
+            let containerWidth = geo.size.width
+            let columnWidth = (containerWidth - spacing * CGFloat(columnCount - 1)) / CGFloat(columnCount)
+            let layout = computeLayout(columnWidth: columnWidth)
 
-        HStack(alignment: .top, spacing: spacing) {
-            ForEach(0..<columnCount, id: \.self) { col in
-                LazyVStack(spacing: spacing) {
-                    ForEach(columns[col]) { item in
-                        content(item.globalIndex, images[item.globalIndex])
-                            .frame(width: columnWidth, height: item.height)
-                            .clipped()
+            ScrollView {
+                HStack(alignment: .top, spacing: spacing) {
+                    ForEach(0..<columnCount, id: \.self) { col in
+                        LazyVStack(spacing: spacing) {
+                            ForEach(layout.columns[col]) { item in
+                                content(item.globalIndex, images[item.globalIndex])
+                                    .frame(width: columnWidth, height: item.height)
+                                    .clipped()
+                                    .onAppear { prefetch(from: item.globalIndex) }
+                            }
+                        }
                     }
                 }
             }
         }
-        .background(
-            GeometryReader { geo in
-                Color.clear.preference(key: ContainerWidthKey.self, value: geo.size.width)
-            }
-        )
-        .onPreferenceChange(ContainerWidthKey.self) { containerWidth = $0 }
     }
 
-    private func assignColumns(columnWidth: CGFloat) -> [[ColumnItem]] {
+    private func prefetch(from index: Int) {
+        let start = index + 1
+        let end = min(start + prefetchCount, images.count)
+        guard start < end else { return }
+        let urls = (start..<end).map { imageURL(images[$0]) }
+        Task { await ImageCache.shared.prefetch(urls: urls) }
+    }
+
+    private struct Layout {
+        let columns: [[ColumnItem]]
+        let totalHeight: CGFloat
+    }
+
+    private func computeLayout(columnWidth: CGFloat) -> Layout {
         guard columnWidth > 0 else {
-            return Array(repeating: [], count: columnCount)
+            return Layout(
+                columns: Array(repeating: [], count: columnCount),
+                totalHeight: 0
+            )
         }
         var columns: [[ColumnItem]] = Array(repeating: [], count: columnCount)
         var columnHeights = Array(repeating: CGFloat.zero, count: columnCount)
@@ -51,7 +65,8 @@ struct WaterfallGrid<Content: View>: View {
             columnHeights[shortestColumn] += itemHeight + spacing
         }
 
-        return columns
+        let maxHeight = columnHeights.max() ?? 0
+        return Layout(columns: columns, totalHeight: maxHeight)
     }
 }
 
@@ -59,11 +74,4 @@ private struct ColumnItem: Identifiable {
     let globalIndex: Int
     let height: CGFloat
     var id: Int { globalIndex }
-}
-
-private struct ContainerWidthKey: PreferenceKey {
-    nonisolated(unsafe) static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
 }
