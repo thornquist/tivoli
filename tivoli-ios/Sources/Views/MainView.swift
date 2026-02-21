@@ -58,7 +58,7 @@ struct MainView: View {
                 .tabViewStyle(.page(indexDisplayMode: .never))
             }
         }
-        .background(Color(.systemBackground))
+        .background(currentPage == 0 ? Color(.systemBackground) : .black)
         .task { await loadFilterData() }
         .onChange(of: selectedCollection) { _, _ in debouncedSearch() }
         .onChange(of: selectedModelUUIDs) { _, _ in debouncedSearch() }
