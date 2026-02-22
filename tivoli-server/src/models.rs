@@ -71,6 +71,11 @@ pub struct CollectionFilter {
     pub collection: Option<String>,
 }
 
+#[derive(Deserialize)]
+pub struct ImageFileParams {
+    pub w: Option<u32>,
+}
+
 // --- Response structs ---
 
 #[derive(Serialize)]

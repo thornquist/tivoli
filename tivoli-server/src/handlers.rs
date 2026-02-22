@@ -12,6 +12,7 @@ use crate::queries;
 pub struct AppState {
     pub db: InMemoryDb,
     pub galleries_path: std::path::PathBuf,
+    pub thumbnail_cache_dir: std::path::PathBuf,
 }
 
 pub async fn search_images(
@@ -45,6 +46,7 @@ pub async fn get_image_detail(
 pub async fn get_image_file(
     State(state): State<Arc<AppState>>,
     Path(uuid): Path<String>,
+    Query(params): Query<ImageFileParams>,
 ) -> Result<impl IntoResponse, AppError> {
     let full_path = {
         let conn = state.db.conn()?;
@@ -68,9 +70,60 @@ pub async fn get_image_file(
         return Err(AppError::BadRequest("Invalid path".into()));
     }
 
-    let body = tokio::fs::read(&canonical)
-        .await
-        .map_err(|_| AppError::NotFound("File not found on disk".into()))?;
+    // No width requested — serve full-resolution file
+    let Some(target_width) = params.w else {
+        let body = tokio::fs::read(&canonical)
+            .await
+            .map_err(|_| AppError::NotFound("File not found on disk".into()))?;
+        return Ok((
+            [(axum::http::header::CONTENT_TYPE, "image/jpeg")],
+            body,
+        ));
+    };
+
+    let target_width = target_width.clamp(50, 1920);
+
+    // Check disk cache
+    let cache_path = state
+        .thumbnail_cache_dir
+        .join(format!("{uuid}_{target_width}.jpg"));
+
+    if let Ok(cached) = tokio::fs::read(&cache_path).await {
+        return Ok((
+            [(axum::http::header::CONTENT_TYPE, "image/jpeg")],
+            cached,
+        ));
+    }
+
+    // Generate thumbnail on blocking thread
+    let source_path = canonical.clone();
+    let out_path = cache_path.clone();
+    let body = tokio::task::spawn_blocking(move || -> Result<Vec<u8>, AppError> {
+        let img = image::open(&source_path)
+            .map_err(|e| AppError::BadRequest(format!("Failed to decode image: {e}")))?;
+
+        let thumb = if img.width() > target_width {
+            img.thumbnail(target_width, u32::MAX)
+        } else {
+            img
+        };
+
+        let mut buf = Vec::new();
+        thumb
+            .write_to(
+                &mut std::io::Cursor::new(&mut buf),
+                image::ImageFormat::Jpeg,
+            )
+            .map_err(|e| AppError::BadRequest(format!("Failed to encode thumbnail: {e}")))?;
+
+        if let Err(e) = std::fs::write(&out_path, &buf) {
+            tracing::warn!("Failed to cache thumbnail: {e}");
+        }
+
+        Ok(buf)
+    })
+    .await
+    .map_err(|e| AppError::DbError(format!("Thumbnail task failed: {e}")))??;
 
     Ok((
         [(axum::http::header::CONTENT_TYPE, "image/jpeg")],

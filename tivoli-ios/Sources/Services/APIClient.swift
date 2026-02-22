@@ -81,6 +81,15 @@ final class APIClient {
         baseURL.appendingPathComponent("images/\(uuid)/file")
     }
 
+    func thumbnailURL(uuid: String, width: Int = 400) -> URL {
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent("images/\(uuid)/file"),
+            resolvingAgainstBaseURL: true
+        )!
+        components.queryItems = [URLQueryItem(name: "w", value: "\(width)")]
+        return components.url!
+    }
+
     func testConnection() async throws {
         let _: [Collection] = try await get("/collections")
     }

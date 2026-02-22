@@ -16,9 +16,13 @@ pub fn build_app(db_path: &str, galleries_dir: &str) -> Router {
     let galleries_path =
         std::fs::canonicalize(galleries_dir).expect("galleries directory not found");
 
+    let thumbnail_cache_dir = galleries_path.join(".thumbnails");
+    std::fs::create_dir_all(&thumbnail_cache_dir).expect("failed to create thumbnail cache dir");
+
     let state = Arc::new(AppState {
         db,
         galleries_path,
+        thumbnail_cache_dir,
     });
 
     Router::new()

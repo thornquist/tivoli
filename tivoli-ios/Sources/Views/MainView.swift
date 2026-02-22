@@ -166,11 +166,11 @@ struct MainView: View {
                 ProgressView()
                     .tint(.white)
             } else {
-                WaterfallGrid(images: images, columnCount: 3, spacing: 2, prefetchCount: 50, imageURL: { api.imageURL(uuid: $0.uuid) }) { index, image in
+                WaterfallGrid(images: images, columnCount: 3, spacing: 2, prefetchCount: 50, imageURL: { api.thumbnailURL(uuid: $0.uuid) }) { index, image in
                     Button {
                         selectedIndex = index
                     } label: {
-                        CachedAsyncImage(url: api.imageURL(uuid: image.uuid))
+                        CachedAsyncImage(url: api.thumbnailURL(uuid: image.uuid))
                             .aspectRatio(image.aspectRatio, contentMode: .fill)
                     }
                     .buttonStyle(.plain)
