@@ -22,7 +22,7 @@ struct WaterfallGrid<Content: View>: View {
                                 content(item.globalIndex, images[item.globalIndex])
                                     .frame(width: columnWidth, height: item.height)
                                     .clipped()
-                                    .onAppear { prefetch(from: item.globalIndex) }
+                                    .onAppear { prefetch(from: item.globalIndex, layout: layout) }
                             }
                         }
                     }
@@ -31,42 +31,62 @@ struct WaterfallGrid<Content: View>: View {
         }
     }
 
-    private func prefetch(from index: Int) {
-        let start = index + 1
-        let end = min(start + prefetchCount, images.count)
+    private func prefetch(from index: Int, layout: Layout) {
+        guard let pos = layout.visualPosition[index] else { return }
+        let start = pos + 1
+        let end = min(start + prefetchCount, layout.visualOrder.count)
         guard start < end else { return }
-        let urls = (start..<end).map { imageURL(images[$0]) }
+        let urls = (start..<end).map { imageURL(images[layout.visualOrder[$0]]) }
         Task { await ImageCache.shared.prefetch(urls: urls) }
     }
 
     private struct Layout {
         let columns: [[ColumnItem]]
         let totalHeight: CGFloat
+        let visualOrder: [Int]          // globalIndex values sorted by y-position
+        let visualPosition: [Int: Int]  // globalIndex → position in visualOrder
     }
 
     private func computeLayout(columnWidth: CGFloat) -> Layout {
         guard columnWidth > 0 else {
             return Layout(
                 columns: Array(repeating: [], count: columnCount),
-                totalHeight: 0
+                totalHeight: 0,
+                visualOrder: [],
+                visualPosition: [:]
             )
         }
         var columns: [[ColumnItem]] = Array(repeating: [], count: columnCount)
         var columnHeights = Array(repeating: CGFloat.zero, count: columnCount)
+        var items: [(globalIndex: Int, yPosition: CGFloat)] = []
 
         for (index, image) in images.enumerated() {
             let shortestColumn = columnHeights.enumerated()
                 .min(by: { $0.element < $1.element })!.offset
             let itemHeight = columnWidth / image.aspectRatio
+            let yPos = columnHeights[shortestColumn]
 
             columns[shortestColumn].append(
                 ColumnItem(globalIndex: index, height: itemHeight)
             )
+            items.append((globalIndex: index, yPosition: yPos))
             columnHeights[shortestColumn] += itemHeight + spacing
         }
 
+        items.sort { $0.yPosition < $1.yPosition }
+        let visualOrder = items.map(\.globalIndex)
+        var visualPosition: [Int: Int] = [:]
+        for (pos, globalIndex) in visualOrder.enumerated() {
+            visualPosition[globalIndex] = pos
+        }
+
         let maxHeight = columnHeights.max() ?? 0
-        return Layout(columns: columns, totalHeight: maxHeight)
+        return Layout(
+            columns: columns,
+            totalHeight: maxHeight,
+            visualOrder: visualOrder,
+            visualPosition: visualPosition
+        )
     }
 }
 

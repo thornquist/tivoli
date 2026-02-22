@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct MainView: View {
+    let useThumbnails: Bool
+    let prefetchCount: Int
+
     @Environment(APIClient.self) private var api
 
     // Filter data
@@ -166,11 +169,11 @@ struct MainView: View {
                 ProgressView()
                     .tint(.white)
             } else {
-                WaterfallGrid(images: images, columnCount: 3, spacing: 2, prefetchCount: 50, imageURL: { api.thumbnailURL(uuid: $0.uuid) }) { index, image in
+                WaterfallGrid(images: images, columnCount: 3, spacing: 2, prefetchCount: prefetchCount, imageURL: { gridImageURL($0.uuid) }) { index, image in
                     Button {
                         selectedIndex = index
                     } label: {
-                        CachedAsyncImage(url: api.thumbnailURL(uuid: image.uuid))
+                        CachedAsyncImage(url: gridImageURL(image.uuid))
                             .aspectRatio(image.aspectRatio, contentMode: .fill)
                     }
                     .buttonStyle(.plain)
@@ -318,6 +321,10 @@ struct MainView: View {
             get: { tagOpByGroup[groupUUID] ?? .allOf },
             set: { tagOpByGroup[groupUUID] = $0 }
         )
+    }
+
+    private func gridImageURL(_ uuid: String) -> URL {
+        useThumbnails ? api.thumbnailURL(uuid: uuid) : api.imageURL(uuid: uuid)
     }
 
     // MARK: - Data Loading

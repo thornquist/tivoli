@@ -19,17 +19,22 @@ final class ServerStore {
         }
     }
 
-    func addOrUpdate(url: String) {
+    func addOrUpdate(url: String, useThumbnails: Bool, prefetchCount: Int) {
         let cleaned = url
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        let label = URL(string: cleaned)?.host ?? cleaned
-        let connection = ServerConnection(
-            url: cleaned, label: label, lastConnected: Date()
-        )
+        let parsed = URL(string: cleaned)
+        let label = parsed?.host ?? cleaned
+        let hostKey = parsed?.host
 
-        servers.removeAll { $0.url == cleaned }
-        servers.insert(connection, at: 0)
+        servers.removeAll {
+            if let hostKey { return URL(string: $0.url)?.host == hostKey }
+            return $0.url == cleaned
+        }
+        servers.insert(ServerConnection(
+            url: cleaned, label: label, lastConnected: Date(),
+            useThumbnails: useThumbnails, prefetchCount: prefetchCount
+        ), at: 0)
 
         if servers.count > 10 {
             servers = Array(servers.prefix(10))

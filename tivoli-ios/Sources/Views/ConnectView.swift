@@ -1,12 +1,16 @@
 import SwiftUI
 
 struct ConnectView: View {
-    let onConnect: (APIClient) -> Void
+    let onConnect: (APIClient, Bool, Int) -> Void
 
     @State private var urlText = ""
+    @State private var useThumbnails = true
+    @State private var prefetchCount = 50
     @State private var isConnecting = false
     @State private var errorMessage: String?
     @State private var serverStore = ServerStore()
+
+    private let prefetchOptions = [10, 25, 50, 100, 200]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,6 +37,31 @@ struct ConnectView: View {
                     .padding(14)
                     .background(Color(.systemGray6), in: .rect(cornerRadius: 12))
                     .font(.body.monospaced())
+
+                // Settings
+                VStack(spacing: 12) {
+                    HStack {
+                        Text("Thumbnails")
+                            .font(.subheadline)
+                        Spacer()
+                        Toggle("", isOn: $useThumbnails)
+                            .labelsHidden()
+                    }
+
+                    HStack {
+                        Text("Prefetch")
+                            .font(.subheadline)
+                        Spacer()
+                        Picker("", selection: $prefetchCount) {
+                            ForEach(prefetchOptions, id: \.self) { count in
+                                Text("\(count)").tag(count)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 220)
+                    }
+                }
+                .padding(.horizontal, 4)
 
                 Button {
                     Task { await connect(urlString: urlText) }
@@ -84,6 +113,8 @@ struct ConnectView: View {
                     VStack(spacing: 0) {
                         ForEach(serverStore.servers) { server in
                             Button {
+                                useThumbnails = server.useThumbnails
+                                prefetchCount = server.prefetchCount
                                 Task { await connect(urlString: server.url) }
                             } label: {
                                 HStack {
@@ -127,8 +158,10 @@ struct ConnectView: View {
         let client = APIClient(baseURL: url)
         do {
             try await client.testConnection()
-            serverStore.addOrUpdate(url: raw)
-            onConnect(client)
+            serverStore.addOrUpdate(
+                url: raw, useThumbnails: useThumbnails, prefetchCount: prefetchCount
+            )
+            onConnect(client, useThumbnails, prefetchCount)
         } catch {
             errorMessage = error.localizedDescription
         }
