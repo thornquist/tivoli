@@ -75,6 +75,7 @@ struct MainView: View {
         }
         .fullScreenCover(item: $selectedIndex) { index in
             ImagePagerView(images: $images, initialIndex: index)
+                .environment(api)
         }
     }
 
@@ -165,7 +166,7 @@ struct MainView: View {
                 ProgressView()
                     .tint(.white)
             } else {
-                WaterfallGrid(images: images, columnCount: 3, spacing: 2, prefetchCount: 500, imageURL: { api.imageURL(uuid: $0.uuid) }) { index, image in
+                WaterfallGrid(images: images, columnCount: 3, spacing: 2, prefetchCount: 50, imageURL: { api.imageURL(uuid: $0.uuid) }) { index, image in
                     Button {
                         selectedIndex = index
                     } label: {

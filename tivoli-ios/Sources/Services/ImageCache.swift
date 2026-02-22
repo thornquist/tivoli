@@ -19,8 +19,8 @@ actor ImageCache {
         mainSession = URLSession(configuration: mainConfig)
 
         let prefetchConfig = URLSessionConfiguration.default
-        prefetchConfig.httpMaximumConnectionsPerHost = 3
-        prefetchConfig.networkServiceType = .background
+        prefetchConfig.httpMaximumConnectionsPerHost = 6
+        prefetchConfig.networkServiceType = .default
         prefetchSession = URLSession(configuration: prefetchConfig)
     }
 

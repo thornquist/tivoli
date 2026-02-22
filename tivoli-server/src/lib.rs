@@ -11,17 +11,13 @@ use axum::Router;
 use handlers::AppState;
 
 pub fn build_app(db_path: &str, galleries_dir: &str) -> Router {
-    let manager = r2d2_sqlite::SqliteConnectionManager::file(db_path);
-    let pool = r2d2::Pool::builder()
-        .max_size(4)
-        .build(manager)
-        .expect("Failed to create DB pool");
+    let db = db::InMemoryDb::load_from_disk(db_path);
 
     let galleries_path =
         std::fs::canonicalize(galleries_dir).expect("galleries directory not found");
 
     let state = Arc::new(AppState {
-        pool,
+        db,
         galleries_path,
     });
 
@@ -36,6 +32,7 @@ pub fn build_app(db_path: &str, galleries_dir: &str) -> Router {
         .route("/models", get(handlers::list_models))
         .route("/tags", get(handlers::list_tags))
         .with_state(state)
+        .layer(tower_http::compression::CompressionLayer::new())
         .layer(tower_http::cors::CorsLayer::permissive())
         .layer(tower_http::trace::TraceLayer::new_for_http())
 }

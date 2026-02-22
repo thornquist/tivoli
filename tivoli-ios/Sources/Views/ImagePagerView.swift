@@ -8,6 +8,7 @@ struct ImagePagerView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var currentIndex: Int
     @State private var showTagEditor = false
+    @State private var isZoomed = false
     @State private var dragOffset: CGFloat = 0
 
     init(images: Binding<[ImageSummary]>, initialIndex: Int) {
@@ -22,7 +23,7 @@ struct ImagePagerView: View {
 
             TabView(selection: $currentIndex) {
                 ForEach(Array(images.enumerated()), id: \.element.id) { index, image in
-                    ZoomableImage(url: api.imageURL(uuid: image.uuid))
+                    ZoomableImage(url: api.imageURL(uuid: image.uuid), isZoomed: $isZoomed)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .tag(index)
                         .onTapGesture {
@@ -34,21 +35,25 @@ struct ImagePagerView: View {
             .ignoresSafeArea()
             .offset(y: dragOffset)
             .gesture(
-                DragGesture(minimumDistance: 30, coordinateSpace: .global)
+                DragGesture(minimumDistance: 40, coordinateSpace: .global)
                     .onChanged { value in
+                        guard !isZoomed else { return }
                         if value.translation.height > 0 {
                             dragOffset = value.translation.height
                         }
                     }
                     .onEnded { value in
-                        if value.translation.height > 100 {
+                        guard !isZoomed else { return }
+                        let velocity = value.predictedEndLocation.y - value.location.y
+                        if value.translation.height > 100 || velocity > 500 {
                             dismiss()
                         } else {
-                            withAnimation(.snappy(duration: 0.25)) {
+                            withAnimation(.spring(duration: 0.3)) {
                                 dragOffset = 0
                             }
                         }
-                    }
+                    },
+                isEnabled: !isZoomed
             )
 
             if showTagEditor, currentIndex < images.count {

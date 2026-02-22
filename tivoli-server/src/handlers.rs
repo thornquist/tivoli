@@ -4,12 +4,13 @@ use axum::extract::{Path, Query, State};
 use axum::response::IntoResponse;
 use axum::Json;
 
+use crate::db::InMemoryDb;
 use crate::errors::AppError;
 use crate::models::*;
 use crate::queries;
 
 pub struct AppState {
-    pub pool: crate::db::Pool,
+    pub db: InMemoryDb,
     pub galleries_path: std::path::PathBuf,
 }
 
@@ -18,7 +19,7 @@ pub async fn search_images(
     Json(request): Json<SearchRequest>,
 ) -> Result<Json<Vec<ImageRow>>, AppError> {
     let (sql, params) = queries::build_image_query(&request.filters)?;
-    let conn = state.pool.get()?;
+    let conn = state.db.conn()?;
     let images = queries::query_images(&conn, &sql, &params)?;
     Ok(Json(images))
 }
@@ -27,7 +28,7 @@ pub async fn search_filter_options(
     State(state): State<Arc<AppState>>,
     Json(request): Json<SearchRequest>,
 ) -> Result<Json<FilterOptions>, AppError> {
-    let conn = state.pool.get()?;
+    let conn = state.db.conn()?;
     let options = queries::query_filter_options(&conn, &request.filters)?;
     Ok(Json(options))
 }
@@ -36,7 +37,7 @@ pub async fn get_image_detail(
     State(state): State<Arc<AppState>>,
     Path(uuid): Path<String>,
 ) -> Result<Json<ImageDetail>, AppError> {
-    let conn = state.pool.get()?;
+    let conn = state.db.conn()?;
     let detail = queries::query_image_detail(&conn, &uuid)?;
     Ok(Json(detail))
 }
@@ -45,19 +46,20 @@ pub async fn get_image_file(
     State(state): State<Arc<AppState>>,
     Path(uuid): Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
-    let conn = state.pool.get()?;
-    let path: String = conn
-        .query_row("SELECT path FROM images WHERE uuid = ?", [&uuid], |row| {
-            row.get::<_, String>(0)
-        })
-        .map_err(|e| match e {
-            rusqlite::Error::QueryReturnedNoRows => {
-                AppError::NotFound("Image not found".into())
-            }
-            other => AppError::from(other),
-        })?;
-
-    let full_path = state.galleries_path.join(&path);
+    let full_path = {
+        let conn = state.db.conn()?;
+        let path: String = conn
+            .query_row("SELECT path FROM images WHERE uuid = ?", [&uuid], |row| {
+                row.get::<_, String>(0)
+            })
+            .map_err(|e| match e {
+                rusqlite::Error::QueryReturnedNoRows => {
+                    AppError::NotFound("Image not found".into())
+                }
+                other => AppError::from(other),
+            })?;
+        state.galleries_path.join(&path)
+    };
     let canonical = full_path
         .canonicalize()
         .map_err(|_| AppError::NotFound("File not found".into()))?;
@@ -81,15 +83,24 @@ pub async fn update_image_tags(
     Path(uuid): Path<String>,
     Json(request): Json<UpdateTagsRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let conn = state.pool.get()?;
-    queries::replace_image_tags(&conn, &uuid, &request.tag_uuids)?;
+    {
+        let conn = state.db.conn()?;
+        queries::replace_image_tags(&conn, &uuid, &request.tag_uuids)?;
+    }
+    // Flush to disk in background
+    let db = state.db.clone();
+    tokio::task::spawn_blocking(move || {
+        if let Err(e) = db.flush_to_disk() {
+            tracing::error!("Failed to flush DB to disk: {e}");
+        }
+    });
     Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
 pub async fn list_collections(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Vec<CollectionSummary>>, AppError> {
-    let conn = state.pool.get()?;
+    let conn = state.db.conn()?;
     let collections = queries::query_collections(&conn)?;
     Ok(Json(collections))
 }
@@ -98,7 +109,7 @@ pub async fn list_galleries(
     State(state): State<Arc<AppState>>,
     Query(filter): Query<CollectionFilter>,
 ) -> Result<Json<Vec<GallerySummary>>, AppError> {
-    let conn = state.pool.get()?;
+    let conn = state.db.conn()?;
     let galleries = queries::query_galleries(&conn, filter.collection.as_deref())?;
     Ok(Json(galleries))
 }
@@ -107,7 +118,7 @@ pub async fn list_models(
     State(state): State<Arc<AppState>>,
     Query(filter): Query<CollectionFilter>,
 ) -> Result<Json<Vec<Model>>, AppError> {
-    let conn = state.pool.get()?;
+    let conn = state.db.conn()?;
     let models = queries::query_models(&conn, filter.collection.as_deref())?;
     Ok(Json(models))
 }
@@ -115,7 +126,7 @@ pub async fn list_models(
 pub async fn list_tags(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Vec<TagGroup>>, AppError> {
-    let conn = state.pool.get()?;
+    let conn = state.db.conn()?;
     let groups = queries::query_tag_groups(&conn)?;
     Ok(Json(groups))
 }
