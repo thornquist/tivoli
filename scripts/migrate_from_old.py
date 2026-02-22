@@ -121,6 +121,7 @@ def load_lookup_tables(old_conn: sqlite3.Connection, new_conn: sqlite3.Connectio
         for row in old_conn.execute(
             "SELECT DISTINCT tag_value FROM image_tags WHERE tag_type='exposure' ORDER BY tag_value"
         ).fetchall()
+        if row[0] not in ("N", "B")  # N -> "Zoomed" in kind group; B dropped
     ]
     feature_values = [
         row[0]
@@ -133,6 +134,7 @@ def load_lookup_tables(old_conn: sqlite3.Connection, new_conn: sqlite3.Connectio
     tag_group_uuids = {
         "exposure": str(uuid.uuid4()),
         "feature": str(uuid.uuid4()),
+        "kind": str(uuid.uuid4()),
     }
 
     tag_uuid_map: dict[str, str] = {}
@@ -147,6 +149,16 @@ def load_lookup_tables(old_conn: sqlite3.Connection, new_conn: sqlite3.Connectio
         uid = str(uuid.uuid4())
         tag_uuid_map[("feature", val)] = uid
         tag_records.append((uid, val, tag_group_uuids["feature"]))
+
+    # "Mule" as a new feature tag
+    mule_uid = str(uuid.uuid4())
+    tag_uuid_map[("feature", "Mule")] = mule_uid
+    tag_records.append((mule_uid, "Mule", tag_group_uuids["feature"]))
+
+    # "Zoomed" in the "kind" group — old exposure "N" maps here
+    zoomed_uid = str(uuid.uuid4())
+    tag_uuid_map[("kind", "Zoomed")] = zoomed_uid
+    tag_records.append((zoomed_uid, "Zoomed", tag_group_uuids["kind"]))
 
     # Insert into new DB
     cur = new_conn.cursor()
@@ -170,7 +182,7 @@ def load_lookup_tables(old_conn: sqlite3.Connection, new_conn: sqlite3.Connectio
 
     print(f"  Models:     {len(model_uuid_map)}")
     print(f"  Tag groups: {len(tag_group_uuids)}")
-    print(f"  Tags:       {len(tag_records)} ({len(exposure_values)} exposure + {len(feature_values)} feature)")
+    print(f"  Tags:       {len(tag_records)} ({len(exposure_values)} exposure + {len(feature_values)+1} feature + 1 kind)")
 
     return model_uuid_map, tag_uuid_map
 
@@ -270,7 +282,13 @@ def migrate_images(
                 total_model_links += 1
 
         for exp_val in exposures:
-            key = ("exposure", exp_val)
+            if exp_val == "N":
+                # Map old "N" exposure to "Zoomed" in the "kind" group
+                key = ("kind", "Zoomed")
+            elif exp_val == "B":
+                continue  # Drop "B" entirely
+            else:
+                key = ("exposure", exp_val)
             if key in tag_uuid_map:
                 image_tag_batch.append((image_uuid, tag_uuid_map[key]))
                 total_tag_links += 1
